@@ -22,12 +22,112 @@
       const submitButton = retalhoForm.querySelector('button[type="submit"]');
       const buttonSpinner = submitButton.querySelector('.spinner');
       const buttonText = submitButton.querySelector('.btn-text');
+      
+      const materialSelect = document.getElementById('material');
+      const novoMaterialContainer = document.getElementById('novo-material-container');
+      const novoMaterialInput = document.getElementById('novo-material-input');
+      const salvarNovoMaterialBtn = document.getElementById('salvar-novo-material-btn');
+      const cancelarNovoMaterialBtn = document.getElementById('cancelar-novo-material-btn');
 
-      // Adiciona um listener para o evento de submit do formulário
+      // --- FUNÇÃO PARA CARREGAR MATERIAIS DO BANCO DE DADOS ---
+      const carregarMateriais = async () => {
+        materialSelect.disabled = true;
+        materialSelect.innerHTML = '<option>Carregando materiais...</option>';
+
+        try {
+          // 1. Busca todos os materiais distintos da tabela
+          const { data, error } = await supabase
+            .from('retalhos')
+            .select('material');
+
+          if (error) throw error;
+
+          // 2. Processa a lista para obter valores únicos, não nulos e ordenados
+          const materiaisUnicos = [...new Set(data.map(item => item.material).filter(Boolean))]
+            .sort((a, b) => a.localeCompare(b));
+
+          // 3. Popula o select com os materiais do banco
+          materialSelect.innerHTML = '<option value="">Selecione um material...</option>';
+          materiaisUnicos.forEach(material => {
+            const option = new Option(material, material);
+            materialSelect.add(option);
+          });
+
+          // 4. Adiciona a opção especial para cadastrar um novo
+          const newMaterialOption = new Option("--- Cadastrar Novo Material ---", "--new--");
+          newMaterialOption.className = "text-blue-600 font-bold";
+          materialSelect.add(newMaterialOption);
+
+        } catch (error) {
+          console.error('Erro ao carregar materiais:', error);
+          materialSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+          Swal.fire('Erro', 'Não foi possível carregar a lista de materiais do banco de dados.', 'error');
+        } finally {
+          materialSelect.disabled = false;
+        }
+      };
+
+
+      // --- LÓGICA PARA CADASTRO DE NOVO MATERIAL ---
+      const showNovoMaterialInput = () => {
+        materialSelect.classList.add('hidden');
+        novoMaterialContainer.classList.remove('hidden');
+        novoMaterialInput.focus();
+      };
+
+      const hideNovoMaterialInput = () => {
+        novoMaterialContainer.classList.add('hidden');
+        materialSelect.classList.remove('hidden');
+        novoMaterialInput.value = '';
+      };
+
+      materialSelect.addEventListener('change', () => {
+        if (materialSelect.value === '--new--') {
+          showNovoMaterialInput();
+        }
+      });
+
+      cancelarNovoMaterialBtn.addEventListener('click', () => {
+        hideNovoMaterialInput();
+        materialSelect.value = '';
+      });
+
+      salvarNovoMaterialBtn.addEventListener('click', () => {
+        const novoMaterialNome = novoMaterialInput.value.trim();
+
+        if (!novoMaterialNome) {
+          Swal.fire('Atenção', 'O nome do material não pode ser vazio.', 'warning');
+          return;
+        }
+
+        const options = Array.from(materialSelect.options);
+        const materialExiste = options.some(option => option.value.toLowerCase() === novoMaterialNome.toLowerCase());
+
+        if (materialExiste) {
+          Swal.fire('Material Duplicado', `O material "${novoMaterialNome}" já existe na lista.`, 'error');
+          return;
+        }
+
+        const newOption = new Option(novoMaterialNome, novoMaterialNome, false, true);
+        materialSelect.insertBefore(newOption, materialSelect.options[materialSelect.options.length - 1]);
+        
+        hideNovoMaterialInput();
+        
+        Swal.fire({
+          toast: true,
+          position: 'top-end',
+          icon: 'success',
+          title: 'Material adicionado!',
+          showConfirmButton: false,
+          timer: 2000
+        });
+      });
+
+
+      // --- LÓGICA PARA CADASTRO DO RETALHO ---
       retalhoForm.addEventListener('submit', async (event) => {
-        event.preventDefault(); // Impede o recarregamento da página
+        event.preventDefault();
 
-        // --- Coleta e validação dos dados do formulário ---
         const formData = new FormData(retalhoForm);
         const retalhoData = {
           numero: parseInt(formData.get('numero')),
@@ -41,58 +141,42 @@
           obs: formData.get('obs')
         };
 
-        // Verifica se campos numéricos obrigatórios são válidos
-        if (isNaN(retalhoData.numero) || !retalhoData.gaveta || !retalhoData.material || !retalhoData.tipo || isNaN(retalhoData.espessura) || isNaN(retalhoData.comprimento) || isNaN(retalhoData.largura) || isNaN(retalhoData.quantidade)) {
-          Swal.fire({
-            icon: 'warning',
-            title: 'Campos Incompletos',
-            text: 'Por favor, preencha todos os campos marcados com *'
-          });
+        if (retalhoData.material === '--new--' || !retalhoData.material) {
+            Swal.fire('Atenção', 'Por favor, selecione ou cadastre um material válido.', 'warning');
+            return;
+        }
+
+        if (isNaN(retalhoData.numero) || !retalhoData.gaveta || !retalhoData.tipo || isNaN(retalhoData.espessura) || isNaN(retalhoData.comprimento) || isNaN(retalhoData.largura) || isNaN(retalhoData.quantidade)) {
+          Swal.fire('Campos Incompletos', 'Por favor, preencha todos os campos marcados com *', 'warning');
           return;
         }
         
-        // --- Lógica de submissão ---
-        // Ativa o estado de carregamento do botão
         submitButton.disabled = true;
         buttonSpinner.classList.remove('hidden');
         buttonText.textContent = 'Salvando...';
 
         try {
-          // Insere os dados na tabela 'retalhos'
           const { error } = await supabase.from("retalhos").insert(retalhoData);
+          if (error) throw error;
 
-          if (error) {
-            // Se houver um erro (ex: número duplicado), lança o erro
-            throw error;
-          }
-
-          // Se for bem-sucedido, mostra uma notificação de sucesso
-          Swal.fire({
-            icon: 'success',
-            title: 'Sucesso!',
-            text: 'Retalho cadastrado com sucesso!',
-            timer: 2000,
-            showConfirmButton: false
-          });
-
-          retalhoForm.reset(); // Limpa o formulário
-          retalhoForm.querySelector('#numero').focus(); // Foca no campo número para o próximo cadastro
+          Swal.fire('Sucesso!', 'Retalho cadastrado com sucesso!', 'success');
+          retalhoForm.reset();
+          document.getElementById('numero').focus();
+          // Recarrega a lista de materiais para incluir o novo, se for o caso
+          await carregarMateriais();
 
         } catch (error) {
           console.error("Erro ao cadastrar retalho:", error);
-          // Mostra uma notificação de erro
-          Swal.fire({
-            icon: 'error',
-            title: 'Erro ao Cadastrar',
-            text: `Não foi possível salvar o retalho. Detalhe: ${error.message}`
-          });
+          Swal.fire('Erro ao Cadastrar', `Não foi possível salvar o retalho. Detalhe: ${error.message}`, 'error');
         } finally {
-          // Restaura o botão ao seu estado normal, independentemente do resultado
           submitButton.disabled = false;
           buttonSpinner.classList.add('hidden');
           buttonText.textContent = 'Cadastrar Retalho';
         }
       });
+
+      // --- INICIALIZAÇÃO ---
+      carregarMateriais();
     });
   </script>
 </head>
@@ -100,7 +184,6 @@
   <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
     <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Cadastro de Retalhos</h1>
     
-    <!-- Formulário de Cadastro -->
     <form id="form-retalho" novalidate class="space-y-6">
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <!-- Número -->
@@ -113,19 +196,22 @@
           <label for="gaveta" class="block text-sm font-medium text-gray-700">Gaveta*</label>
           <input type="text" name="gaveta" id="gaveta" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
         </div>
-        <!-- Material -->
+        
+        <!-- Material (com lógica dinâmica) -->
         <div>
           <label for="material" class="block text-sm font-medium text-gray-700">Material*</label>
-          <select id="material" name="material" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-            <option value="">Selecione um material...</option>
-            <option value="Acrílico">Acrílico</option>
-            <option value="PS">PS</option>
-            <option value="PVC">PVC</option>
-            <option value="ACM">ACM</option>
-            <option value="PETG">PETG</option>
-            <option value="Outros">Outros</option>
+          <select id="material" name="material" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
+            <!-- Opções carregadas dinamicamente -->
           </select>
+          <div id="novo-material-container" class="hidden mt-1 space-y-2">
+            <input type="text" id="novo-material-input" placeholder="Nome do novo material" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <div class="flex items-center gap-2">
+              <button type="button" id="salvar-novo-material-btn" class="w-full text-sm bg-blue-500 text-white py-1 px-2 rounded-md hover:bg-blue-600">Salvar</button>
+              <button type="button" id="cancelar-novo-material-btn" class="w-full text-sm bg-gray-200 text-gray-700 py-1 px-2 rounded-md hover:bg-gray-300">Cancelar</button>
+            </div>
+          </div>
         </div>
+
         <!-- Tipo -->
         <div>
           <label for="tipo" class="block text-sm font-medium text-gray-700">Tipo*</label>

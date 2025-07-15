@@ -6,205 +6,8 @@
   <title>Consulta de Retalhos</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
-
-    // --- CONFIGURAÇÃO ---
-    const supabase = createClient(
-      'https://rlgsehxrpkxlavxdpzgz.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsZ3NlaHhycGt4bGF2eGRwemd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1OTY2MjgsImV4cCI6MjA2ODE3MjYyOH0.S_doyB0_3GuKRWCb0RXOXzTBvhsiEp_l9X0kWMt86Xg'
-    );
-
-    // --- LÓGICA DA APLICAÇÃO ---
-    document.addEventListener('DOMContentLoaded', () => {
-      // Mapeamento dos elementos do DOM
-      const form = document.getElementById('filter-form');
-      const materialSelect = document.getElementById('material');
-      const tipoSelect = document.getElementById('tipo');
-      const espessuraInput = document.getElementById('espessura');
-      const larguraInput = document.getElementById('largura');
-      const alturaInput = document.getElementById('altura');
-      
-      const resultsTableBody = document.getElementById('tabela-retalhos-body');
-      const resultsCardsContainer = document.getElementById('cards-container');
-      const loader = document.getElementById('loader');
-      const emptyState = document.getElementById('empty-state');
-      const resultsContainer = document.getElementById('results-container');
-
-      // --- FUNÇÕES ---
-
-      const carregarTipos = async () => {
-        const material = materialSelect.value;
-        if (!material) {
-          tipoSelect.innerHTML = '<option value="">Todos os Tipos</option>';
-          return;
-        }
-
-        const { data } = await supabase
-          .from("retalhos")
-          .select("tipo")
-          .eq("material", material)
-          .neq("reservado", true);
-
-        const tiposUnicos = [...new Set((data || []).map(t => t.tipo))].sort();
-
-        tipoSelect.innerHTML = '<option value="">Todos os Tipos</option>';
-        tiposUnicos.forEach(tipo => {
-          if (tipo) { // Evita adicionar opções nulas
-            const opt = document.createElement("option");
-            opt.value = tipo;
-            opt.textContent = tipo;
-            tipoSelect.appendChild(opt);
-          }
-        });
-      };
-
-      const carregarRetalhos = async () => {
-        // 1. Mostrar loader e esconder resultados
-        loader.classList.remove('hidden');
-        resultsContainer.classList.add('hidden');
-        emptyState.classList.add('hidden');
-
-        // 2. Montar a query
-        const material = materialSelect.value;
-        const tipo = tipoSelect.value;
-        const espessura = parseFloat(espessuraInput.value);
-        const largura = parseFloat(larguraInput.value);
-        const altura = parseFloat(alturaInput.value);
-
-        let query = supabase.from('retalhos').select('*').eq('reservado', false);
-        if (material) query = query.eq('material', material);
-        if (tipo) query = query.eq('tipo', tipo);
-        if (!isNaN(espessura)) query = query.eq('espessura', espessura);
-        if (!isNaN(largura)) query = query.gte('largura', largura);
-        if (!isNaN(altura)) query = query.gte('comprimento', altura);
-
-        try {
-          const { data, error } = await query.order('numero', { ascending: true });
-
-          if (error) {
-            throw error;
-          }
-
-          // 3. Limpar resultados anteriores
-          resultsTableBody.innerHTML = "";
-          resultsCardsContainer.innerHTML = "";
-
-          if (data.length === 0) {
-            emptyState.classList.remove('hidden');
-          } else {
-            renderResults(data);
-            resultsContainer.classList.remove('hidden');
-          }
-        } catch (error) {
-          console.error("Erro ao carregar dados:", error);
-          Swal.fire({ 
-            icon: 'error', 
-            title: 'Oops...',
-            text: 'Não foi possível carregar os retalhos. Tente novamente mais tarde.'
-          });
-        } finally {
-          // 4. Esconder o loader
-          loader.classList.add('hidden');
-        }
-      };
-      
-      const renderResults = (data) => {
-        data.forEach(item => {
-          // Renderiza a linha da tabela (visível em telas médias e grandes)
-          const tableRow = document.createElement("tr");
-          tableRow.className = "border-b border-gray-200 hover:bg-gray-50";
-          tableRow.innerHTML = `
-            <td class="p-3 text-center">${item.numero}</td>
-            <td class="p-3 text-center">${item.gaveta}</td>
-            <td class="p-3 text-center">${item.material}</td>
-            <td class="p-3 text-center">${item.tipo}</td>
-            <td class="p-3 text-center">${item.espessura}mm</td>
-            <td class="p-3 text-center">${item.comprimento}m</td>
-            <td class="p-3 text-center">${item.largura}m</td>
-            <td class="p-3 text-center">${item.quantidade}</td>
-            <td class="p-3 text-left">${item.obs || "N/A"}</td>
-            <td class="p-3 text-center">
-              <button data-id="${item.id}" class="reserve-btn bg-blue-500 text-white px-3 py-1 text-sm rounded-md shadow-sm hover:bg-blue-600 transition-colors">Reservar</button>
-            </td>
-          `;
-          resultsTableBody.appendChild(tableRow);
-
-          // Renderiza o card (visível em telas pequenas)
-          const card = document.createElement("div");
-          card.className = "bg-white border border-gray-200 rounded-lg shadow-sm p-4 space-y-2";
-          card.innerHTML = `
-            <div class="flex justify-between items-center font-bold text-lg">
-              <span>Nº: ${item.numero}</span>
-              <span class="text-sm font-medium text-gray-600">Gaveta: ${item.gaveta}</span>
-            </div>
-            <div class="text-gray-700">
-              <p><strong>Material:</strong> ${item.material} - ${item.tipo}</p>
-              <p><strong>Medidas:</strong> ${item.comprimento}m x ${item.largura}m x ${item.espessura}mm</p>
-              <p><strong>Quantidade:</strong> ${item.quantidade}</p>
-              <p><strong>Obs:</strong> ${item.obs || "N/A"}</p>
-            </div>
-            <div class="pt-2">
-              <button data-id="${item.id}" class="reserve-btn w-full bg-blue-500 text-white py-2 rounded-md shadow-sm hover:bg-blue-600 transition-colors">Reservar</button>
-            </div>
-          `;
-          resultsCardsContainer.appendChild(card);
-        });
-      }
-
-      const pedirOS = async (id) => {
-        const { value: os } = await Swal.fire({
-          title: 'Informe a OS',
-          input: 'text',
-          inputLabel: 'Número da Ordem de Serviço',
-          inputPlaceholder: 'Digite o número da OS...',
-          showCancelButton: true,
-          confirmButtonColor: '#3B82F6', // blue-500
-          cancelButtonText: 'Cancelar'
-        });
-
-        if (!os) return;
-
-        const { error } = await supabase
-          .from('retalhos')
-          .update({ reservado: true, os: os, data_reserva: new Date().toISOString() })
-          .eq('id', id);
-
-        if (error) {
-          Swal.fire({ icon: 'error', text: 'Erro ao reservar o retalho.' });
-          console.error(error);
-        } else {
-          Swal.fire({ icon: 'success', text: 'Retalho reservado com sucesso!', timer: 1500, showConfirmButton: false });
-          carregarRetalhos();
-        }
-      };
-
-      // --- EVENT LISTENERS ---
-      
-      // Busca ao submeter o formulário (ou clicar no botão)
-      form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        carregarRetalhos();
-      });
-
-      // Carrega tipos quando o material muda
-      materialSelect.addEventListener('change', carregarTipos);
-
-      // Delegação de evento para os botões "Reservar"
-      resultsContainer.addEventListener('click', (e) => {
-        if (e.target && e.target.classList.contains('reserve-btn')) {
-          const id = e.target.dataset.id;
-          pedirOS(id);
-        }
-      });
-      
-      // --- INICIALIZAÇÃO ---
-      carregarTipos();
-      carregarRetalhos();
-    });
-  </script>
+  <script type="module" src="script.js"></script>
 </head>
-
 <body class="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8">
   <div class="max-w-7xl mx-auto bg-white p-5 sm:p-6 rounded-xl shadow-lg">
     <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Consulta de Retalhos 📋</h1>
@@ -214,11 +17,6 @@
         <label for="material" class="block text-sm font-medium text-gray-700 mb-1">Material:</label>
         <select id="material" class="border-gray-300 rounded-md shadow-sm w-full focus:ring-blue-500 focus:border-blue-500">
           <option value="">Todos</option>
-          <option value="Acrílico">Acrílico</option>
-          <option value="PS">PS</option>
-          <option value="PVC">PVC</option>
-          <option value="ACM">ACM</option>
-          <option value="PETG">PETG</option>
         </select>
       </div>
       <div class="flex-grow min-w-[150px]">
@@ -246,14 +44,14 @@
         </button>
       </div>
     </form>
-    
+
     <div id="loader" class="text-center p-10 hidden">
-        <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-        <p class="mt-2 text-gray-600">Carregando retalhos...</p>
+      <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+      <p class="mt-2 text-gray-600">Carregando retalhos...</p>
     </div>
 
     <div id="empty-state" class="text-center p-10 hidden">
-        <p class="text-gray-600">Nenhum retalho encontrado com os filtros aplicados.</p>
+      <p class="text-gray-600">Nenhum retalho encontrado com os filtros aplicados.</p>
     </div>
 
     <div id="results-container" class="overflow-x-auto">
@@ -272,12 +70,10 @@
             <th class="p-3 text-center">Ações</th>
           </tr>
         </thead>
-        <tbody id="tabela-retalhos-body">
-          </tbody>
+        <tbody id="tabela-retalhos-body"></tbody>
       </table>
 
-      <div id="cards-container" class="grid grid-cols-1 gap-4 md:hidden">
-        </div>
+      <div id="cards-container" class="grid grid-cols-1 gap-4 md:hidden"></div>
     </div>
   </div>
 </body>
