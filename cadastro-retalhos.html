@@ -5,94 +5,167 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Cadastro de Retalhos</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   <script type="module">
     import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
 
+    // --- CONFIGURAÇÃO ---
     const supabase = createClient(
       'https://rlgsehxrpkxlavxdpzgz.supabase.co',
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsZ3NlaHhycGt4bGF2eGRwemd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1OTY2MjgsImV4cCI6MjA2ODE3MjYyOH0.S_doyB0_3GuKRWCb0RXOXzTBvhsiEp_l9X0kWMt86Xg'
     );
 
-    window.cadastrarRetalho = async function () {
-      const material = document.getElementById("material").value;
-      const gaveta = document.getElementById("gaveta").value;
-      const tipo = document.getElementById("tipo").value;
-      const espessura = parseFloat(document.getElementById("espessura").value);
-      const comprimento = parseFloat(document.getElementById("comprimento").value);
-      const largura = parseFloat(document.getElementById("largura").value);
-      const quantidade = parseInt(document.getElementById("quantidade").value);
-      const obs = document.getElementById("obs").value;
+    // --- LÓGICA DA APLICAÇÃO ---
+    document.addEventListener('DOMContentLoaded', () => {
+      // Mapeamento dos elementos do DOM
+      const retalhoForm = document.getElementById('form-retalho');
+      const submitButton = retalhoForm.querySelector('button[type="submit"]');
+      const buttonSpinner = submitButton.querySelector('.spinner');
+      const buttonText = submitButton.querySelector('.btn-text');
 
-      if (!material || !gaveta || !tipo || isNaN(espessura) || isNaN(comprimento) || isNaN(largura) || isNaN(quantidade)) {
-        alert("Preencha todos os campos obrigatórios.");
-        return;
-      }
+      // Adiciona um listener para o evento de submit do formulário
+      retalhoForm.addEventListener('submit', async (event) => {
+        event.preventDefault(); // Impede o recarregamento da página
 
-      const { error } = await supabase.from("retalhos").insert({
-        material,
-        gaveta,
-        tipo,
-        espessura,
-        comprimento,
-        largura,
-        quantidade,
-        obs
+        // --- Coleta e validação dos dados do formulário ---
+        const formData = new FormData(retalhoForm);
+        const retalhoData = {
+          numero: parseInt(formData.get('numero')),
+          gaveta: formData.get('gaveta'),
+          material: formData.get('material'),
+          tipo: formData.get('tipo'),
+          espessura: parseFloat(formData.get('espessura')),
+          comprimento: parseFloat(formData.get('comprimento')),
+          largura: parseFloat(formData.get('largura')),
+          quantidade: parseInt(formData.get('quantidade')),
+          obs: formData.get('obs')
+        };
+
+        // Verifica se campos numéricos obrigatórios são válidos
+        if (isNaN(retalhoData.numero) || !retalhoData.gaveta || !retalhoData.material || !retalhoData.tipo || isNaN(retalhoData.espessura) || isNaN(retalhoData.comprimento) || isNaN(retalhoData.largura) || isNaN(retalhoData.quantidade)) {
+          Swal.fire({
+            icon: 'warning',
+            title: 'Campos Incompletos',
+            text: 'Por favor, preencha todos os campos marcados com *'
+          });
+          return;
+        }
+        
+        // --- Lógica de submissão ---
+        // Ativa o estado de carregamento do botão
+        submitButton.disabled = true;
+        buttonSpinner.classList.remove('hidden');
+        buttonText.textContent = 'Salvando...';
+
+        try {
+          // Insere os dados na tabela 'retalhos'
+          const { error } = await supabase.from("retalhos").insert(retalhoData);
+
+          if (error) {
+            // Se houver um erro (ex: número duplicado), lança o erro
+            throw error;
+          }
+
+          // Se for bem-sucedido, mostra uma notificação de sucesso
+          Swal.fire({
+            icon: 'success',
+            title: 'Sucesso!',
+            text: 'Retalho cadastrado com sucesso!',
+            timer: 2000,
+            showConfirmButton: false
+          });
+
+          retalhoForm.reset(); // Limpa o formulário
+          retalhoForm.querySelector('#numero').focus(); // Foca no campo número para o próximo cadastro
+
+        } catch (error) {
+          console.error("Erro ao cadastrar retalho:", error);
+          // Mostra uma notificação de erro
+          Swal.fire({
+            icon: 'error',
+            title: 'Erro ao Cadastrar',
+            text: `Não foi possível salvar o retalho. Detalhe: ${error.message}`
+          });
+        } finally {
+          // Restaura o botão ao seu estado normal, independentemente do resultado
+          submitButton.disabled = false;
+          buttonSpinner.classList.add('hidden');
+          buttonText.textContent = 'Cadastrar Retalho';
+        }
       });
-
-      if (error) {
-        alert("Erro ao cadastrar retalho.");
-        console.error(error);
-      } else {
-        alert("Retalho cadastrado com sucesso!");
-        document.getElementById("form-retalho").reset();
-      }
-    }
+    });
   </script>
 </head>
-<body class="bg-gray-100 min-h-screen p-6">
-  <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow">
-    <h1 class="text-2xl font-bold mb-4">Cadastro de Retalhos</h1>
-    <form id="form-retalho" onsubmit="event.preventDefault(); cadastrarRetalho();" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<body class="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8">
+  <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Cadastro de Retalhos</h1>
+    
+    <!-- Formulário de Cadastro -->
+    <form id="form-retalho" novalidate class="space-y-6">
+      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <!-- Número -->
+        <div>
+          <label for="numero" class="block text-sm font-medium text-gray-700">Número*</label>
+          <input type="number" name="numero" id="numero" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <!-- Gaveta -->
+        <div>
+          <label for="gaveta" class="block text-sm font-medium text-gray-700">Gaveta*</label>
+          <input type="text" name="gaveta" id="gaveta" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <!-- Material -->
+        <div>
+          <label for="material" class="block text-sm font-medium text-gray-700">Material*</label>
+          <select id="material" name="material" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+            <option value="">Selecione um material...</option>
+            <option value="Acrílico">Acrílico</option>
+            <option value="PS">PS</option>
+            <option value="PVC">PVC</option>
+            <option value="ACM">ACM</option>
+            <option value="PETG">PETG</option>
+            <option value="Outros">Outros</option>
+          </select>
+        </div>
+        <!-- Tipo -->
+        <div>
+          <label for="tipo" class="block text-sm font-medium text-gray-700">Tipo*</label>
+          <input type="text" name="tipo" id="tipo" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: Cristal, Leitoso, Preto...">
+        </div>
+        <!-- Espessura -->
+        <div>
+          <label for="espessura" class="block text-sm font-medium text-gray-700">Espessura (mm)*</label>
+          <input type="number" name="espessura" id="espessura" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <!-- Comprimento -->
+        <div>
+          <label for="comprimento" class="block text-sm font-medium text-gray-700">Comprimento (m)*</label>
+          <input type="number" name="comprimento" id="comprimento" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <!-- Largura -->
+        <div>
+          <label for="largura" class="block text-sm font-medium text-gray-700">Largura (m)*</label>
+          <input type="number" name="largura" id="largura" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+        <!-- Quantidade -->
+        <div>
+          <label for="quantidade" class="block text-sm font-medium text-gray-700">Quantidade*</label>
+          <input type="number" name="quantidade" id="quantidade" value="1" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+        </div>
+      </div>
+      <!-- Observação -->
       <div>
-        <label class="block font-medium">Material*</label>
-        <select id="material" class="border rounded px-2 py-1 w-full" required>
-          <option value="">Selecione</option>
-          <option value="acrilico">Acrílico</option>
-          <option value="ps">PS</option>
-          <option value="pvc">PVC</option>
-          <option value="outros">Outros</option>
-        </select>
+        <label for="obs" class="block text-sm font-medium text-gray-700">Observação</label>
+        <textarea id="obs" name="obs" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
       </div>
-      <div>
-        <label class="block font-medium">Gaveta*</label>
-        <input id="gaveta" class="border rounded px-2 py-1 w-full" required />
-      </div>
-      <div>
-        <label class="block font-medium">Tipo*</label>
-        <input id="tipo" class="border rounded px-2 py-1 w-full" required />
-      </div>
-      <div>
-        <label class="block font-medium">Espessura (mm)*</label>
-        <input id="espessura" type="number" step="0.01" class="border rounded px-2 py-1 w-full" required />
-      </div>
-      <div>
-        <label class="block font-medium">Comprimento (m)*</label>
-        <input id="comprimento" type="number" step="0.01" class="border rounded px-2 py-1 w-full" required />
-      </div>
-      <div>
-        <label class="block font-medium">Largura (m)*</label>
-        <input id="largura" type="number" step="0.01" class="border rounded px-2 py-1 w-full" required />
-      </div>
-      <div>
-        <label class="block font-medium">Quantidade*</label>
-        <input id="quantidade" type="number" class="border rounded px-2 py-1 w-full" required />
-      </div>
-      <div class="md:col-span-2">
-        <label class="block font-medium">Observação</label>
-        <textarea id="obs" class="border rounded px-2 py-1 w-full"></textarea>
-      </div>
-      <div class="md:col-span-2 text-right">
-        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Cadastrar</button>
+      <!-- Botão de Submit -->
+      <div class="pt-4 flex justify-end">
+        <button type="submit" class="w-full md:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">
+          <svg class="spinner hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span class="btn-text">Cadastrar Retalho</span>
+        </button>
       </div>
     </form>
   </div>
