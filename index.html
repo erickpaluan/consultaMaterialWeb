@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Consulta de Retalhos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabase = createClient(
+      'https://rlgsehxrpkxlavxdpzgz.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsZ3NlaHhycGt4bGF2eGRwemd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1OTY2MjgsImV4cCI6MjA2ODE3MjYyOH0.S_doyB0_3GuKRWCb0RXOXzTBvhsiEp_l9X0kWMt86Xg'
+    );
+
+    async function carregarTipos() {
+      const material = document.getElementById("material").value;
+      const { data } = await supabase
+        .from("retalhos")
+        .select("tipo")
+        .eq("material", material)
+        .neq("reservado", true);
+
+      const selectTipo = document.getElementById("tipo");
+      const tiposUnicos = [...new Set((data || []).map(t => t.tipo))];
+
+      selectTipo.innerHTML = '<option value="">Todos</option>';
+      tiposUnicos.forEach(tipo => {
+        const opt = document.createElement("option");
+        opt.value = tipo;
+        opt.textContent = tipo;
+        selectTipo.appendChild(opt);
+      });
+    }
+
+    async function carregarRetalhos() {
+      const material = document.getElementById("material").value;
+      const tipo = document.getElementById("tipo").value;
+      const espessura = parseFloat(document.getElementById("espessura").value);
+      const largura = parseFloat(document.getElementById("largura").value);
+      const altura = parseFloat(document.getElementById("altura").value);
+
+      let query = supabase.from('retalhos').select('*').eq('reservado', false);
+      if (material) query = query.eq('material', material);
+      if (tipo) query = query.eq('tipo', tipo);
+      if (!isNaN(espessura)) query = query.eq('espessura', espessura);
+      if (!isNaN(largura)) query = query.gte('largura', largura);
+      if (!isNaN(altura)) query = query.gte('comprimento', altura);
+
+      const { data, error } = await query.order('numero', { ascending: true });
+
+      const tbody = document.getElementById("tabela-retalhos");
+      tbody.innerHTML = "";
+
+      if (error) {
+        console.error("Erro ao carregar dados:", error);
+        return;
+      }
+
+      data.forEach(item => {
+        const linha = document.createElement("tr");
+        linha.className = "hover:bg-gray-100 text-sm";
+        linha.innerHTML = `
+          <td class="border px-2 py-1 text-center">${item.numero}</td>
+          <td class="border px-2 py-1 text-center">${item.gaveta}</td>
+          <td class="border px-2 py-1 text-center">${item.material}</td>
+          <td class="border px-2 py-1 text-center">${item.tipo}</td>
+          <td class="border px-2 py-1 text-center">${item.espessura}</td>
+          <td class="border px-2 py-1 text-center">${item.comprimento}</td>
+          <td class="border px-2 py-1 text-center">${item.largura}</td>
+          <td class="border px-2 py-1 text-center">${item.quantidade}</td>
+          <td class="border px-2 py-1">${item.obs || ""}</td>
+          <td class="border px-2 py-1 text-center">
+            <button class="bg-blue-500 text-white px-2 py-1 rounded hover:bg-blue-600" onclick="pedirOS('${item.id}')">Reservar</button>
+          </td>
+        `;
+        tbody.appendChild(linha);
+      });
+    }
+
+    window.carregarRetalhos = carregarRetalhos;
+
+    window.pedirOS = async function (id) {
+      const { value: os } = await Swal.fire({
+        title: 'Informe a OS',
+        input: 'text',
+        inputLabel: 'Número da Ordem de Serviço',
+        inputPlaceholder: 'Digite aqui...',
+        showCancelButton: true
+      });
+
+      if (!os) return;
+
+      const { error } = await supabase
+        .from('retalhos')
+        .update({ reservado: true, os: os, data_reserva: new Date().toISOString() })
+        .eq('id', id);
+
+      if (error) {
+        Swal.fire({ icon: 'error', text: 'Erro ao reservar retalho.' });
+        console.error(error);
+      } else {
+        Swal.fire({ icon: 'success', text: 'Retalho reservado com sucesso!' });
+        carregarRetalhos();
+      }
+    };
+
+    window.onload = () => {
+      carregarTipos();
+      carregarRetalhos();
+    }
+  </script>
+</head>
+<body class="bg-gray-100 min-h-screen p-4">
+  <div class="max-w-7xl mx-auto bg-white p-4 sm:p-6 rounded shadow">
+    <h1 class="text-2xl font-bold mb-4">Consulta de Retalhos</h1>
+
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-4">
+      <div>
+        <label class="block font-medium">Material:</label>
+        <select id="material" class="border rounded px-2 py-1 w-full" onchange="carregarTipos()">
+          <option value="">Todos</option>
+          <option value="acrilico">Acrílico</option>
+          <option value="ps">PS</option>
+          <option value="pvc">PVC</option>
+        </select>
+      </div>
+      <div>
+        <label class="block font-medium">Tipo:</label>
+        <select id="tipo" class="border rounded px-2 py-1 w-full">
+          <option value="">Todos</option>
+        </select>
+      </div>
+      <div>
+        <label class="block font-medium">Espessura (mm):</label>
+        <input id="espessura" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </div>
+      <div>
+        <label class="block font-medium">Largura mínima (m):</label>
+        <input id="largura" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </div>
+      <div>
+        <label class="block font-medium">Altura mínima (m):</label>
+        <input id="altura" type="number" step="0.01" class="border rounded px-2 py-1 w-full">
+      </div>
+      <div class="self-end">
+        <button onclick="carregarRetalhos()" class="bg-blue-500 text-white px-4 py-2 rounded w-full hover:bg-blue-600">🔍 Buscar</button>
+      </div>
+    </div>
+
+    <div class="overflow-x-auto">
+      <table class="w-full table-auto border border-gray-300 mb-4 text-sm">
+        <thead class="bg-gray-200">
+          <tr>
+            <th class="border px-2 py-1">Nº</th>
+            <th class="border px-2 py-1">Gaveta</th>
+            <th class="border px-2 py-1">Material</th>
+            <th class="border px-2 py-1">Tipo</th>
+            <th class="border px-2 py-1">Esp.</th>
+            <th class="border px-2 py-1">Comp.</th>
+            <th class="border px-2 py-1">Largura</th>
+            <th class="border px-2 py-1">Qtd</th>
+            <th class="border px-2 py-1">Obs</th>
+            <th class="border px-2 py-1">Ações</th>
+          </tr>
+        </thead>
+        <tbody id="tabela-retalhos">
+          <!-- Dados dinâmicos -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cadastro de Retalhos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script type="module">
+    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+
+    const supabase = createClient(
+      'https://rlgsehxrpkxlavxdpzgz.supabase.co',
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsZ3NlaHhycGt4bGF2eGRwemd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1OTY2MjgsImV4cCI6MjA2ODE3MjYyOH0.S_doyB0_3GuKRWCb0RXOXzTBvhsiEp_l9X0kWMt86Xg'
+    );
+
+    window.cadastrarRetalho = async function () {
+      const material = document.getElementById("material").value;
+      const gaveta = document.getElementById("gaveta").value;
+      const tipo = document.getElementById("tipo").value;
+      const espessura = parseFloat(document.getElementById("espessura").value);
+      const comprimento = parseFloat(document.getElementById("comprimento").value);
+      const largura = parseFloat(document.getElementById("largura").value);
+      const quantidade = parseInt(document.getElementById("quantidade").value);
+      const obs = document.getElementById("obs").value;
+
+      if (!material || !gaveta || !tipo || isNaN(espessura) || isNaN(comprimento) || isNaN(largura) || isNaN(quantidade)) {
+        alert("Preencha todos os campos obrigatórios.");
+        return;
+      }
+
+      const { error } = await supabase.from("retalhos").insert({
+        material,
+        gaveta,
+        tipo,
+        espessura,
+        comprimento,
+        largura,
+        quantidade,
+        obs
+      });
+
+      if (error) {
+        alert("Erro ao cadastrar retalho.");
+        console.error(error);
+      } else {
+        alert("Retalho cadastrado com sucesso!");
+        document.getElementById("form-retalho").reset();
+      }
+    }
+  </script>
+</head>
+<body class="bg-gray-100 min-h-screen p-6">
+  <div class="max-w-2xl mx-auto bg-white p-6 rounded shadow">
+    <h1 class="text-2xl font-bold mb-4">Cadastro de Retalhos</h1>
+    <form id="form-retalho" onsubmit="event.preventDefault(); cadastrarRetalho();" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div>
+        <label class="block font-medium">Material*</label>
+        <select id="material" class="border rounded px-2 py-1 w-full" required>
+          <option value="">Selecione</option>
+          <option value="acrilico">Acrílico</option>
+          <option value="ps">PS</option>
+          <option value="pvc">PVC</option>
+          <option value="outros">Outros</option>
+        </select>
+      </div>
+      <div>
+        <label class="block font-medium">Gaveta*</label>
+        <input id="gaveta" class="border rounded px-2 py-1 w-full" required />
+      </div>
+      <div>
+        <label class="block font-medium">Tipo*</label>
+        <input id="tipo" class="border rounded px-2 py-1 w-full" required />
+      </div>
+      <div>
+        <label class="block font-medium">Espessura (mm)*</label>
+        <input id="espessura" type="number" step="0.01" class="border rounded px-2 py-1 w-full" required />
+      </div>
+      <div>
+        <label class="block font-medium">Comprimento (m)*</label>
+        <input id="comprimento" type="number" step="0.01" class="border rounded px-2 py-1 w-full" required />
+      </div>
+      <div>
+        <label class="block font-medium">Largura (m)*</label>
+        <input id="largura" type="number" step="0.01" class="border rounded px-2 py-1 w-full" required />
+      </div>
+      <div>
+        <label class="block font-medium">Quantidade*</label>
+        <input id="quantidade" type="number" class="border rounded px-2 py-1 w-full" required />
+      </div>
+      <div class="md:col-span-2">
+        <label class="block font-medium">Observação</label>
+        <textarea id="obs" class="border rounded px-2 py-1 w-full"></textarea>
+      </div>
+      <div class="md:col-span-2 text-right">
+        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700">Cadastrar</button>
+      </div>
+    </form>
+  </div>
+</body>
+</html>
