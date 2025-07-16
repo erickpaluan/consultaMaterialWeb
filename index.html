@@ -1,80 +1,640 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Consulta de Retalhos</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script type="module" src="script.js"></script>
-</head>
-<body class="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8">
-  <div class="max-w-7xl mx-auto bg-white p-5 sm:p-6 rounded-xl shadow-lg">
-    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Consulta de Retalhos 📋</h1>
+<html lang="pt-BR" class="h-full bg-gray-100">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Gerenciamento de Retalhos</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+    <style>
+      .has-error input,
+      .has-error select,
+      .has-error textarea {
+        border-color: #ef4444;
+      }
+      .has-error input:focus,
+      .has-error select:focus,
+      .has-error textarea:focus {
+        border-color: #ef4444;
+        box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.5);
+      }
+      .sort-asc:after {
+        content: "▲";
+        margin-left: 5px;
+      }
+      .sort-desc:after {
+        content: "▼";
+        margin-left: 5px;
+      }
+    </style>
+  </head>
+  <body class="h-full font-sans antialiased bg-gray-50">
+    <div class="min-h-full">
+      <header class="bg-white shadow">
+        <div
+          class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center"
+        >
+          <h1 class="text-3xl font-bold tracking-tight text-gray-900">
+            Gerenciamento de Retalhos
+          </h1>
+          <div class="flex space-x-2">
+            <button
+              id="open-register-modal-btn"
+              class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300"
+            >
+              <i class="fas fa-plus mr-2"></i>Cadastrar Retalho
+            </button>
+            <button
+              id="show-reserved-btn"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300"
+            >
+              <i class="fas fa-list-alt mr-2"></i>Ver Reservados
+            </button>
+          </div>
+        </div>
+      </header>
+      <main>
+        <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
+          <div class="p-6 bg-white rounded-lg shadow-md mb-6">
+            <form
+              id="filter-form"
+              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 items-end"
+            >
+              <div>
+                <label
+                  for="material"
+                  class="block text-sm font-medium text-gray-700"
+                  >Material</label
+                >
+                <select
+                  id="material"
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todos</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  for="tipo"
+                  class="block text-sm font-medium text-gray-700"
+                  >Tipo</label
+                >
+                <select
+                  id="tipo"
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todos</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  for="espessura"
+                  class="block text-sm font-medium text-gray-700"
+                  >Espessura (mm)</label
+                >
+                <select
+                  id="espessura"
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Todas</option>
+                </select>
+              </div>
+              <div>
+                <label
+                  for="largura"
+                  class="block text-sm font-medium text-gray-700"
+                  >Largura (m) ≥</label
+                >
+                <input
+                  type="number"
+                  id="largura"
+                  step="0.01"
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label
+                  for="altura"
+                  class="block text-sm font-medium text-gray-700"
+                  >Comprimento (m) ≥</label
+                >
+                <input
+                  type="number"
+                  id="altura"
+                  step="0.01"
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div class="flex space-x-2">
+                <button
+                  type="submit"
+                  class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Buscar
+                </button>
+                <button
+                  type="button"
+                  id="clear-btn"
+                  class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-400 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 hidden"
+                >
+                  Limpar
+                </button>
+              </div>
+            </form>
+          </div>
 
-    <form id="filter-form" class="flex flex-wrap items-end gap-x-4 gap-y-3 mb-6">
-      <div class="flex-grow min-w-[150px]">
-        <label for="material" class="block text-sm font-medium text-gray-700 mb-1">Material:</label>
-        <select id="material" class="border-gray-300 rounded-md shadow-sm w-full focus:ring-blue-500 focus:border-blue-500">
-          <option value="">Todos</option>
-        </select>
-      </div>
-      <div class="flex-grow min-w-[150px]">
-        <label for="tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo:</label>
-        <select id="tipo" class="border-gray-300 rounded-md shadow-sm w-full focus:ring-blue-500 focus:border-blue-500">
-          <option value="">Todos os Tipos</option>
-        </select>
-      </div>
-      <div class="flex-grow min-w-[120px]">
-        <label for="espessura" class="block text-sm font-medium text-gray-700 mb-1">Espessura (mm):</label>
-        <input id="espessura" type="number" step="0.01" class="border-gray-300 rounded-md shadow-sm w-full focus:ring-blue-500 focus:border-blue-500">
-      </div>
-      <div class="flex-grow min-w-[120px]">
-        <label for="largura" class="block text-sm font-medium text-gray-700 mb-1">Largura mín. (m):</label>
-        <input id="largura" type="number" step="0.01" class="border-gray-300 rounded-md shadow-sm w-full focus:ring-blue-500 focus:border-blue-500">
-      </div>
-      <div class="flex-grow min-w-[120px]">
-        <label for="altura" class="block text-sm font-medium text-gray-700 mb-1">Comp. mín. (m):</label>
-        <input id="altura" type="number" step="0.01" class="border-gray-300 rounded-md shadow-sm w-full focus:ring-blue-500 focus:border-blue-500">
-      </div>
-      <div class="w-full sm:w-auto">
-        <button type="submit" class="w-full flex items-center justify-center bg-blue-500 text-white px-5 py-2 rounded-md shadow-sm hover:bg-blue-600 transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" /></svg>
-          Buscar
-        </button>
-      </div>
-    </form>
+          <div id="loader" class="text-center p-8 hidden">
+            <div
+              class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"
+            ></div>
+          </div>
 
-    <div id="loader" class="text-center p-10 hidden">
-      <svg class="animate-spin h-8 w-8 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-      <p class="mt-2 text-gray-600">Carregando retalhos...</p>
+          <div id="empty-state" class="text-center text-gray-500 p-8 hidden">
+            <p>Nenhum retalho encontrado com os filtros selecionados.</p>
+          </div>
+
+          <div id="results-container" class="hidden">
+            <div
+              id="tabela-retalhos-container"
+              class="hidden md:block bg-white p-6 rounded-lg shadow-md overflow-x-auto mb-6"
+            >
+              <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                  <tr>
+                    <th
+                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      data-sort="numero"
+                    >
+                      Nº
+                    </th>
+                    <th
+                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      data-sort="gaveta"
+                    >
+                      Gaveta
+                    </th>
+                    <th
+                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      data-sort="material"
+                    >
+                      Material
+                    </th>
+                    <th
+                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      data-sort="tipo"
+                    >
+                      Tipo
+                    </th>
+                    <th
+                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      data-sort="espessura"
+                    >
+                      Espessura (mm)
+                    </th>
+                    <th
+                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      data-sort="comprimento"
+                    >
+                      Comprimento (m)
+                    </th>
+                    <th
+                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      data-sort="largura"
+                    >
+                      Largura (m)
+                    </th>
+                    <th
+                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                      data-sort="quantidade"
+                    >
+                      Qtd.
+                    </th>
+                    <th
+                      class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Obs
+                    </th>
+                    <th
+                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Ações
+                    </th>
+                  </tr>
+                </thead>
+                <tbody
+                  id="tabela-retalhos-body"
+                  class="bg-white divide-y divide-gray-200"
+                ></tbody>
+              </table>
+            </div>
+
+            <div
+              id="cards-container"
+              class="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4"
+            ></div>
+
+            <div
+              id="pagination-controls"
+              class="flex justify-center items-center space-x-4 mt-6"
+            >
+              <button
+                id="prev-page-btn"
+                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-300 disabled:opacity-50"
+              >
+                Anterior
+              </button>
+              <span id="page-info" class="text-gray-700 font-medium"
+                >Página 1 de 1</span
+              >
+              <button
+                id="next-page-btn"
+                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-300 disabled:opacity-50"
+              >
+                Próxima
+              </button>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
 
-    <div id="empty-state" class="text-center p-10 hidden">
-      <p class="text-gray-600">Nenhum retalho encontrado com os filtros aplicados.</p>
+    <div
+      id="reserved-modal"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden"
+    >
+      <div
+        class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white transform transition-transform scale-95 opacity-0 duration-300"
+      >
+        <div
+          class="modal-header flex justify-between items-center pb-3 border-b-2"
+        >
+          <h3 class="text-xl font-bold">Retalhos Reservados</h3>
+          <span
+            id="close-reserved-modal-btn"
+            class="text-gray-400 cursor-pointer text-2xl leading-none hover:text-gray-900"
+            >&times;</span
+          >
+        </div>
+        <div class="modal-body mt-2">
+          <div class="flex-grow mr-4 mb-4">
+            <input
+              type="text"
+              id="os-search-input"
+              placeholder="Buscar por Nº da OS..."
+              class="w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div id="modal-loader" class="text-center p-4 hidden">
+            <div
+              class="animate-spin inline-block w-6 h-6 border-4 border-blue-500 border-t-transparent rounded-full"
+            ></div>
+          </div>
+          <div id="pdf-content"></div>
+        </div>
+        <div
+          class="modal-footer flex justify-end items-center p-4 bg-gray-100 rounded-b-md"
+        >
+          <button
+            id="create-pdf-btn"
+            class="bg-green-500 text-white px-4 py-2 rounded-md shadow-sm hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500"
+          >
+            Gerar PDF
+          </button>
+        </div>
+      </div>
     </div>
 
-    <div id="results-container" class="overflow-x-auto">
-      <table class="w-full table-auto text-sm text-left text-gray-600 hidden md:table">
-        <thead class="bg-gray-100 text-gray-700 uppercase text-xs">
-          <tr>
-            <th class="p-3 text-center">Nº</th>
-            <th class="p-3 text-center">Gaveta</th>
-            <th class="p-3 text-center">Material</th>
-            <th class="p-3 text-center">Tipo</th>
-            <th class="p-3 text-center">Esp.</th>
-            <th class="p-3 text-center">Comp.</th>
-            <th class="p-3 text-center">Largura</th>
-            <th class="p-3 text-center">Qtd</th>
-            <th class="p-3 text-left">Obs</th>
-            <th class="p-3 text-center">Ações</th>
-          </tr>
-        </thead>
-        <tbody id="tabela-retalhos-body"></tbody>
-      </table>
-
-      <div id="cards-container" class="grid grid-cols-1 gap-4 md:hidden"></div>
+    <div
+      id="register-modal"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden"
+    >
+      <div
+        class="relative top-20 mx-auto p-5 border w-11/12 md:w-3/4 lg:w-2/3 shadow-lg rounded-md bg-white transform transition-transform scale-95 opacity-0 duration-300"
+      >
+        <div
+          class="modal-header flex justify-between items-center pb-3 border-b-2"
+        >
+          <h3 class="text-xl font-bold">Cadastro de Retalho</h3>
+          <span
+            id="close-register-modal-btn"
+            class="text-gray-400 cursor-pointer text-2xl leading-none hover:text-gray-900"
+            >&times;</span
+          >
+        </div>
+        <div class="modal-body mt-4">
+          <form id="register-form" novalidate class="space-y-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <label
+                  for="reg-numero"
+                  class="block text-sm font-medium text-gray-700"
+                  >Nº do Retalho*</label
+                >
+                <input
+                  type="number"
+                  name="numero"
+                  id="reg-numero"
+                  required
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label
+                  for="reg-gaveta"
+                  class="block text-sm font-medium text-gray-700"
+                  >Gaveta*</label
+                >
+                <input
+                  type="text"
+                  name="gaveta"
+                  id="reg-gaveta"
+                  required
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label
+                  for="reg-material"
+                  class="block text-sm font-medium text-gray-700"
+                  >Material*</label
+                >
+                <select
+                  id="reg-material"
+                  name="material"
+                  required
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+                ></select>
+                <div
+                  id="reg-novo-material-container"
+                  class="hidden mt-1 space-y-2"
+                >
+                  <input
+                    type="text"
+                    id="reg-novo-material-input"
+                    placeholder="Nome do novo material"
+                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2"
+                  />
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      id="reg-salvar-novo-material-btn"
+                      class="w-full text-sm bg-blue-500 text-white py-1 px-2 rounded-md hover:bg-blue-600"
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      type="button"
+                      id="reg-cancelar-novo-material-btn"
+                      class="w-full text-sm bg-gray-200 text-gray-700 py-1 px-2 rounded-md hover:bg-gray-300"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label
+                  for="reg-tipo"
+                  class="block text-sm font-medium text-gray-700"
+                  >Tipo*</label
+                >
+                <select
+                  id="reg-tipo"
+                  name="tipo"
+                  required
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all duration-300"
+                >
+                  <option value="">Selecione...</option>
+                </select>
+                <div id="reg-novo-tipo-container" class="hidden mt-1 space-y-2">
+                  <input
+                    type="text"
+                    id="reg-novo-tipo-input"
+                    placeholder="Nome do novo tipo"
+                    class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 p-2"
+                  />
+                  <div class="flex items-center gap-2">
+                    <button
+                      type="button"
+                      id="reg-salvar-novo-tipo-btn"
+                      class="w-full text-sm bg-blue-500 text-white py-1 px-2 rounded-md hover:bg-blue-600"
+                    >
+                      Salvar
+                    </button>
+                    <button
+                      type="button"
+                      id="reg-cancelar-novo-tipo-btn"
+                      class="w-full text-sm bg-gray-200 text-gray-700 py-1 px-2 rounded-md hover:bg-gray-300"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              </div>
+              <div>
+                <label
+                  for="reg-espessura"
+                  class="block text-sm font-medium text-gray-700"
+                  >Espessura (mm)*</label
+                >
+                <input
+                  type="number"
+                  name="espessura"
+                  id="reg-espessura"
+                  step="0.01"
+                  required
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div>
+                <label
+                  for="reg-comprimento"
+                  class="block text-sm font-medium text-gray-700"
+                  >Comprimento (m)*</label
+                >
+                <input
+                  type="number"
+                  name="comprimento"
+                  id="reg-comprimento"
+                  step="0.01"
+                  required
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label
+                  for="reg-largura"
+                  class="block text-sm font-medium text-gray-700"
+                  >Largura (m)*</label
+                >
+                <input
+                  type="number"
+                  name="largura"
+                  id="reg-largura"
+                  step="0.01"
+                  required
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div>
+                <label
+                  for="reg-quantidade"
+                  class="block text-sm font-medium text-gray-700"
+                  >Quantidade*</label
+                >
+                <input
+                  type="number"
+                  name="quantidade"
+                  id="reg-quantidade"
+                  value="1"
+                  required
+                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+            </div>
+            <div>
+              <label
+                for="reg-obs"
+                class="block text-sm font-medium text-gray-700"
+                >Observações</label
+              >
+              <textarea
+                id="reg-obs"
+                name="obs"
+                rows="2"
+                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              ></textarea>
+            </div>
+          </form>
+        </div>
+        <div class="modal-footer flex justify-end pt-4 gap-4">
+          <button
+            type="button"
+            id="reg-clear-btn"
+            class="w-full md:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gray-400 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 mr-2"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 112 0v6a1 1 0 11-2 0V8z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Limpar
+          </button>
+          <button
+            type="submit"
+            form="register-form"
+            id="reg-submit-btn"
+            class="w-full md:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              class="reg-spinner hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span class="reg-btn-text">Cadastrar Retalho</span>
+          </button>
+        </div>
+      </div>
     </div>
-  </div>
-</body>
+
+    <div
+      id="reserve-modal"
+      class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden"
+    >
+      <div
+        class="relative top-20 mx-auto p-5 border w-11/12 md:w-1/2 lg:w-1/3 shadow-lg rounded-md bg-white transform transition-transform scale-95 opacity-0 duration-300"
+      >
+        <div
+          class="modal-header flex justify-between items-center pb-3 border-b-2"
+        >
+          <h3 class="text-xl font-bold">Reservar Retalho</h3>
+          <span
+            id="close-reserve-modal-btn"
+            class="text-gray-400 cursor-pointer text-2xl leading-none hover:text-gray-900"
+            >&times;</span
+          >
+        </div>
+        <div class="modal-body mt-4">
+          <form id="reserve-form" class="space-y-4">
+            <div>
+              <label
+                for="reserve-input-os"
+                class="block text-sm font-medium text-gray-700"
+                >Número da OS*</label
+              >
+              <input
+                type="text"
+                id="reserve-input-os"
+                required
+                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div id="reserve-quantity-container" class="hidden">
+              <label
+                for="reserve-input-quantidade"
+                class="block text-sm font-medium text-gray-700"
+                >Quantos retalhos reservar?*</label
+              >
+              <input
+                type="number"
+                id="reserve-input-quantidade"
+                value="1"
+                min="1"
+                required
+                class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <p id="reserve-available" class="text-xs text-gray-500 mt-1"></p>
+            </div>
+          </form>
+        </div>
+        <div
+          class="modal-footer flex justify-end items-center p-4 bg-gray-100 rounded-b-md mt-4"
+        >
+          <button
+            id="reserve-confirm-btn"
+            type="button"
+            class="bg-blue-600 text-white px-6 py-2 rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Confirmar Reserva
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script type="module" src="script.js"></script>
+  </body>
 </html>

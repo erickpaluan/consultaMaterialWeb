@@ -1,259 +1,251 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Cadastro de Retalhos</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js/+esm';
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cadastro de Retalhos</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script type="module" src="cadastro.js"></script>
 
-    // --- CONFIGURAÇÃO ---
-    const supabase = createClient(
-      'https://rlgsehxrpkxlavxdpzgz.supabase.co',
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsZ3NlaHhycGt4bGF2eGRwemd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1OTY2MjgsImV4cCI6MjA2ODE3MjYyOH0.S_doyB0_3GuKRWCb0RXOXzTBvhsiEp_l9X0kWMt86Xg'
-    );
+    <style>
+      .has-error .block.text-sm.font-medium.text-gray-700 {
+        color: #ef4444; /* Cor vermelha para o label */
+      }
+      .has-error input,
+      .has-error select {
+        border-color: #ef4444 !important;
+        box-shadow: 0 0 0 1px #ef4444 !important;
+      }
+    </style>
+  </head>
+  <body class="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8">
+    <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
+      <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">
+        Cadastro de Retalhos
+      </h1>
 
-    // --- LÓGICA DA APLICAÇÃO ---
-    document.addEventListener('DOMContentLoaded', () => {
-      // Mapeamento dos elementos do DOM
-      const retalhoForm = document.getElementById('form-retalho');
-      const submitButton = retalhoForm.querySelector('button[type="submit"]');
-      const buttonSpinner = submitButton.querySelector('.spinner');
-      const buttonText = submitButton.querySelector('.btn-text');
-      
-      const materialSelect = document.getElementById('material');
-      const novoMaterialContainer = document.getElementById('novo-material-container');
-      const novoMaterialInput = document.getElementById('novo-material-input');
-      const salvarNovoMaterialBtn = document.getElementById('salvar-novo-material-btn');
-      const cancelarNovoMaterialBtn = document.getElementById('cancelar-novo-material-btn');
-
-      // --- FUNÇÃO PARA CARREGAR MATERIAIS DO BANCO DE DADOS ---
-      const carregarMateriais = async () => {
-        materialSelect.disabled = true;
-        materialSelect.innerHTML = '<option>Carregando materiais...</option>';
-
-        try {
-          // 1. Busca todos os materiais distintos da tabela
-          const { data, error } = await supabase
-            .from('retalhos')
-            .select('material');
-
-          if (error) throw error;
-
-          // 2. Processa a lista para obter valores únicos, não nulos e ordenados
-          const materiaisUnicos = [...new Set(data.map(item => item.material).filter(Boolean))]
-            .sort((a, b) => a.localeCompare(b));
-
-          // 3. Popula o select com os materiais do banco
-          materialSelect.innerHTML = '<option value="">Selecione um material...</option>';
-          materiaisUnicos.forEach(material => {
-            const option = new Option(material, material);
-            materialSelect.add(option);
-          });
-
-          // 4. Adiciona a opção especial para cadastrar um novo
-          const newMaterialOption = new Option("--- Cadastrar Novo Material ---", "--new--");
-          newMaterialOption.className = "text-blue-600 font-bold";
-          materialSelect.add(newMaterialOption);
-
-        } catch (error) {
-          console.error('Erro ao carregar materiais:', error);
-          materialSelect.innerHTML = '<option value="">Erro ao carregar</option>';
-          Swal.fire('Erro', 'Não foi possível carregar a lista de materiais do banco de dados.', 'error');
-        } finally {
-          materialSelect.disabled = false;
-        }
-      };
-
-
-      // --- LÓGICA PARA CADASTRO DE NOVO MATERIAL ---
-      const showNovoMaterialInput = () => {
-        materialSelect.classList.add('hidden');
-        novoMaterialContainer.classList.remove('hidden');
-        novoMaterialInput.focus();
-      };
-
-      const hideNovoMaterialInput = () => {
-        novoMaterialContainer.classList.add('hidden');
-        materialSelect.classList.remove('hidden');
-        novoMaterialInput.value = '';
-      };
-
-      materialSelect.addEventListener('change', () => {
-        if (materialSelect.value === '--new--') {
-          showNovoMaterialInput();
-        }
-      });
-
-      cancelarNovoMaterialBtn.addEventListener('click', () => {
-        hideNovoMaterialInput();
-        materialSelect.value = '';
-      });
-
-      salvarNovoMaterialBtn.addEventListener('click', () => {
-        const novoMaterialNome = novoMaterialInput.value.trim();
-
-        if (!novoMaterialNome) {
-          Swal.fire('Atenção', 'O nome do material não pode ser vazio.', 'warning');
-          return;
-        }
-
-        const options = Array.from(materialSelect.options);
-        const materialExiste = options.some(option => option.value.toLowerCase() === novoMaterialNome.toLowerCase());
-
-        if (materialExiste) {
-          Swal.fire('Material Duplicado', `O material "${novoMaterialNome}" já existe na lista.`, 'error');
-          return;
-        }
-
-        const newOption = new Option(novoMaterialNome, novoMaterialNome, false, true);
-        materialSelect.insertBefore(newOption, materialSelect.options[materialSelect.options.length - 1]);
-        
-        hideNovoMaterialInput();
-        
-        Swal.fire({
-          toast: true,
-          position: 'top-end',
-          icon: 'success',
-          title: 'Material adicionado!',
-          showConfirmButton: false,
-          timer: 2000
-        });
-      });
-
-
-      // --- LÓGICA PARA CADASTRO DO RETALHO ---
-      retalhoForm.addEventListener('submit', async (event) => {
-        event.preventDefault();
-
-        const formData = new FormData(retalhoForm);
-        const retalhoData = {
-          numero: parseInt(formData.get('numero')),
-          gaveta: formData.get('gaveta'),
-          material: formData.get('material'),
-          tipo: formData.get('tipo'),
-          espessura: parseFloat(formData.get('espessura')),
-          comprimento: parseFloat(formData.get('comprimento')),
-          largura: parseFloat(formData.get('largura')),
-          quantidade: parseInt(formData.get('quantidade')),
-          obs: formData.get('obs')
-        };
-
-        if (retalhoData.material === '--new--' || !retalhoData.material) {
-            Swal.fire('Atenção', 'Por favor, selecione ou cadastre um material válido.', 'warning');
-            return;
-        }
-
-        if (isNaN(retalhoData.numero) || !retalhoData.gaveta || !retalhoData.tipo || isNaN(retalhoData.espessura) || isNaN(retalhoData.comprimento) || isNaN(retalhoData.largura) || isNaN(retalhoData.quantidade)) {
-          Swal.fire('Campos Incompletos', 'Por favor, preencha todos os campos marcados com *', 'warning');
-          return;
-        }
-        
-        submitButton.disabled = true;
-        buttonSpinner.classList.remove('hidden');
-        buttonText.textContent = 'Salvando...';
-
-        try {
-          const { error } = await supabase.from("retalhos").insert(retalhoData);
-          if (error) throw error;
-
-          Swal.fire('Sucesso!', 'Retalho cadastrado com sucesso!', 'success');
-          retalhoForm.reset();
-          document.getElementById('numero').focus();
-          // Recarrega a lista de materiais para incluir o novo, se for o caso
-          await carregarMateriais();
-
-        } catch (error) {
-          console.error("Erro ao cadastrar retalho:", error);
-          Swal.fire('Erro ao Cadastrar', `Não foi possível salvar o retalho. Detalhe: ${error.message}`, 'error');
-        } finally {
-          submitButton.disabled = false;
-          buttonSpinner.classList.add('hidden');
-          buttonText.textContent = 'Cadastrar Retalho';
-        }
-      });
-
-      // --- INICIALIZAÇÃO ---
-      carregarMateriais();
-    });
-  </script>
-</head>
-<body class="bg-gray-50 min-h-screen p-4 sm:p-6 lg:p-8">
-  <div class="max-w-3xl mx-auto bg-white p-6 sm:p-8 rounded-xl shadow-lg">
-    <h1 class="text-2xl sm:text-3xl font-bold text-gray-800 mb-6">Cadastro de Retalhos</h1>
-    
-    <form id="form-retalho" novalidate class="space-y-6">
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <!-- Número -->
-        <div>
-          <label for="numero" class="block text-sm font-medium text-gray-700">Número*</label>
-          <input type="number" name="numero" id="numero" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <!-- Gaveta -->
-        <div>
-          <label for="gaveta" class="block text-sm font-medium text-gray-700">Gaveta*</label>
-          <input type="text" name="gaveta" id="gaveta" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        
-        <!-- Material (com lógica dinâmica) -->
-        <div>
-          <label for="material" class="block text-sm font-medium text-gray-700">Material*</label>
-          <select id="material" name="material" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-all duration-300">
-            <!-- Opções carregadas dinamicamente -->
-          </select>
-          <div id="novo-material-container" class="hidden mt-1 space-y-2">
-            <input type="text" id="novo-material-input" placeholder="Nome do novo material" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-            <div class="flex items-center gap-2">
-              <button type="button" id="salvar-novo-material-btn" class="w-full text-sm bg-blue-500 text-white py-1 px-2 rounded-md hover:bg-blue-600">Salvar</button>
-              <button type="button" id="cancelar-novo-material-btn" class="w-full text-sm bg-gray-200 text-gray-700 py-1 px-2 rounded-md hover:bg-gray-300">Cancelar</button>
+      <form id="form-retalho" novalidate class="space-y-6">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div>
+            <label for="numero" class="block text-sm font-medium text-gray-700"
+              >Número*</label
+            >
+            <input
+              type="number"
+              name="numero"
+              id="numero"
+              required
+              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label for="gaveta" class="block text-sm font-medium text-gray-700"
+              >Gaveta*</label
+            >
+            <input
+              type="text"
+              name="gaveta"
+              id="gaveta"
+              required
+              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label
+              for="material"
+              class="block text-sm font-medium text-gray-700"
+              >Material*</label
+            >
+            <select
+              id="material"
+              name="material"
+              required
+              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+            ></select>
+            <div id="novo-material-container" class="hidden mt-1 space-y-2">
+              <input
+                type="text"
+                id="novo-material-input"
+                placeholder="Nome do novo material"
+                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              />
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="salvar-novo-material-btn"
+                  class="w-full text-sm bg-blue-500 text-white py-1 px-2 rounded-md hover:bg-blue-600"
+                >
+                  Salvar
+                </button>
+                <button
+                  type="button"
+                  id="cancelar-novo-material-btn"
+                  class="w-full text-sm bg-gray-200 text-gray-700 py-1 px-2 rounded-md hover:bg-gray-300"
+                >
+                  Cancelar
+                </button>
+              </div>
             </div>
           </div>
+
+          <div>
+            <label for="tipo" class="block text-sm font-medium text-gray-700"
+              >Tipo*</label
+            >
+            <select
+              id="tipo"
+              name="tipo"
+              required
+              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 transition-all duration-300"
+            >
+              <option value="">Selecione...</option>
+            </select>
+            <div id="novo-tipo-container" class="hidden mt-1 space-y-2">
+              <input
+                type="text"
+                id="novo-tipo-input"
+                placeholder="Nome do novo tipo"
+                class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+              />
+              <div class="flex items-center gap-2">
+                <button
+                  type="button"
+                  id="salvar-novo-tipo-btn"
+                  class="w-full text-sm bg-blue-500 text-white py-1 px-2 rounded-md hover:bg-blue-600"
+                >
+                  Salvar
+                </button>
+                <button
+                  type="button"
+                  id="cancelar-novo-tipo-btn"
+                  class="w-full text-sm bg-gray-200 text-gray-700 py-1 px-2 rounded-md hover:bg-gray-300"
+                >
+                  Cancelar
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label
+              for="espessura"
+              class="block text-sm font-medium text-gray-700"
+              >Espessura (mm)*</label
+            >
+            <input
+              type="number"
+              name="espessura"
+              id="espessura"
+              step="0.01"
+              required
+              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label
+              for="comprimento"
+              class="block text-sm font-medium text-gray-700"
+              >Comprimento (m)*</label
+            >
+            <input
+              type="number"
+              name="comprimento"
+              id="comprimento"
+              step="0.01"
+              required
+              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label for="largura" class="block text-sm font-medium text-gray-700"
+              >Largura (m)*</label
+            >
+            <input
+              type="number"
+              name="largura"
+              id="largura"
+              step="0.01"
+              required
+              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+          <div>
+            <label
+              for="quantidade"
+              class="block text-sm font-medium text-gray-700"
+              >Quantidade*</label
+            >
+            <input
+              type="number"
+              name="quantidade"
+              id="quantidade"
+              value="1"
+              required
+              class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+            />
+          </div>
+        </div>
+        <div>
+          <label for="obs" class="block text-sm font-medium text-gray-700"
+            >Observação</label
+          >
+          <textarea
+            id="obs"
+            name="obs"
+            rows="3"
+            class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"
+          ></textarea>
         </div>
 
-        <!-- Tipo -->
-        <div>
-          <label for="tipo" class="block text-sm font-medium text-gray-700">Tipo*</label>
-          <input type="text" name="tipo" id="tipo" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500" placeholder="Ex: Cristal, Leitoso, Preto...">
+        <div class="pt-4 flex justify-end gap-4">
+          <button
+            type="button"
+            id="clear-btn"
+            class="w-full md:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-gray-400 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              class="h-5 w-5 mr-2"
+              viewBox="0 0 20 20"
+              fill="currentColor"
+            >
+              <path
+                fill-rule="evenodd"
+                d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm6 0a1 1 0 112 0v6a1 1 0 11-2 0V8z"
+                clip-rule="evenodd"
+              />
+            </svg>
+            Limpar
+          </button>
+          <button
+            type="submit"
+            class="w-full md:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <svg
+              class="spinner hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                class="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                stroke-width="4"
+              ></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            <span class="btn-text">Cadastrar Retalho</span>
+          </button>
         </div>
-        <!-- Espessura -->
-        <div>
-          <label for="espessura" class="block text-sm font-medium text-gray-700">Espessura (mm)*</label>
-          <input type="number" name="espessura" id="espessura" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <!-- Comprimento -->
-        <div>
-          <label for="comprimento" class="block text-sm font-medium text-gray-700">Comprimento (m)*</label>
-          <input type="number" name="comprimento" id="comprimento" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <!-- Largura -->
-        <div>
-          <label for="largura" class="block text-sm font-medium text-gray-700">Largura (m)*</label>
-          <input type="number" name="largura" id="largura" step="0.01" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-        </div>
-        <!-- Quantidade -->
-        <div>
-          <label for="quantidade" class="block text-sm font-medium text-gray-700">Quantidade*</label>
-          <input type="number" name="quantidade" id="quantidade" value="1" required class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
-        </div>
-      </div>
-      <!-- Observação -->
-      <div>
-        <label for="obs" class="block text-sm font-medium text-gray-700">Observação</label>
-        <textarea id="obs" name="obs" rows="3" class="mt-1 block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500"></textarea>
-      </div>
-      <!-- Botão de Submit -->
-      <div class="pt-4 flex justify-end">
-        <button type="submit" class="w-full md:w-auto inline-flex items-center justify-center px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed">
-          <svg class="spinner hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-          </svg>
-          <span class="btn-text">Cadastrar Retalho</span>
-        </button>
-      </div>
-    </form>
-  </div>
-</body>
+      </form>
+    </div>
+  </body>
 </html>
