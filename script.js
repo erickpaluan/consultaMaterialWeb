@@ -977,63 +977,66 @@ const searchReservedRetalhos = async (osNumber = "") => {
 
 // Função principal para controlar a visibilidade da UI com base no status de autenticação e no papel do usuário
 const toggleUIForAuthStatus = (user, role) => {
+  console.log("--- Executando toggleUIForAuthStatus ---");
+  console.log("User recebido:", user);
+  console.log("Role recebido:", role);
+
   // Oculta todos os conteúdos por padrão para evitar flashes
   authenticatedContent.classList.add("hidden");
   unauthenticatedContent.classList.add("hidden");
-  if (adminContent) adminContent.classList.add("hidden"); // Garante que exista antes de tentar adicionar classe
-  if (userContent) userContent.classList.add("hidden");   // Garante que exista antes de tentar adicionar classe
+  if (adminContent) adminContent.classList.add("hidden");
+  if (userContent) userContent.classList.add("hidden");
 
   if (user) {
-    // Usuário autenticado
-    userEmailSpan.textContent = user.email || "Usuário";
-    logoutBtn.classList.remove("hidden");
-    authenticatedContent.classList.remove("hidden");
-    unauthenticatedContent.classList.add("hidden"); // Garante que o conteúdo não autenticado esteja escondido
+    console.log("Usuário está logado.");
+    authenticatedContent.classList.remove("hidden"); // Mostra o container principal autenticado
+    logoutBtn.classList.remove("hidden"); // Mostra o botão de sair
 
     // Mostra conteúdo baseado no papel (role)
     if (role === 'admin') {
+      console.log("Role é 'admin'. Exibindo conteúdo de admin.");
       if (adminContent) adminContent.classList.remove("hidden");
-      if (userContent) userContent.classList.add("hidden"); // Esconde o conteúdo de usuário comum se for admin
-      // console.log("Usuário ADMIN logado:", user.email);
+      if (userContent) userContent.classList.add("hidden");
+      // Certifique-se de que o botão de cadastrar e ver reservados estejam visíveis para admin
+      if (openRegisterModalBtn) openRegisterModalBtn.classList.remove('hidden');
+      if (showReservedBtn) showReservedBtn.classList.remove('hidden');
     } else if (role === 'user') {
+      console.log("Role é 'user'. Exibindo conteúdo de usuário comum.");
       if (userContent) userContent.classList.remove("hidden");
-      if (adminContent) adminContent.classList.add("hidden"); // Esconde o conteúdo de admin se for user comum
-      // console.log("Usuário COMUM logado:", user.email);
+      if (adminContent) adminContent.classList.add("hidden");
+      // Para usuário comum, talvez o botão de cadastrar fique hidden, mas o de ver reservados fica visível
+      if (openRegisterModalBtn) openRegisterModalBtn.classList.add('hidden');
+      if (showReservedBtn) showReservedBtn.classList.remove('hidden');
     } else {
-      // Caso o role não seja 'admin' nem 'user' (ou seja null/undefined)
-      // Pode-se definir um comportamento padrão, por exemplo, mostrar apenas o conteúdo comum
+      console.log("Role é indefinido ou diferente de 'admin'/'user'. Exibindo conteúdo de usuário comum por padrão.");
       if (userContent) userContent.classList.remove("hidden");
-      // console.log("Usuário logado com papel desconhecido/não definido:", user.email, "Role:", role);
+      // Se o role não estiver definido, pode ser um problema de configuração do perfil
       Swal.fire({
         icon: 'warning',
         title: 'Aviso de Perfil',
         text: 'Seu perfil não tem um papel (role) definido. Contate o administrador.',
       });
+      // Ainda oculta o register e mostra o reserved
+      if (openRegisterModalBtn) openRegisterModalBtn.classList.add('hidden');
+      if (showReservedBtn) showReservedBtn.classList.remove('hidden');
     }
 
     // Inicializa a busca de retalhos e filtros após o login
     fetchRetalhos();
-    carregarFiltros();
-    carregarMateriais(); // Para o modal de registro
-    carregarTipos();     // Para o modal de registro
 
   } else {
-    // Usuário não autenticado
-    userEmailSpan.textContent = "Visitante";
-    logoutBtn.classList.add("hidden");
-    authenticatedContent.classList.add("hidden"); // Garante que o conteúdo autenticado esteja escondido
+    console.log("Usuário NÃO está logado. Exibindo 'Acesso Restrito'.");
     unauthenticatedContent.classList.remove("hidden"); // Mostra o conteúdo de "Acesso Restrito"
-
-    // Esconde os conteúdos específicos de papel
-    if (adminContent) adminContent.classList.add("hidden");
-    if (userContent) userContent.classList.add("hidden");
-
-    // Redirecionar para a página de login se não estiver logado
-    // Verifica se a URL atual já é a de login para evitar loop infinito
-    if (!window.location.pathname.includes("/auth.html")) {
-      window.location.href = "/auth.html";
-    }
+    logoutBtn.classList.add("hidden"); // Oculta o botão de sair
+    if (openRegisterModalBtn) openRegisterModalBtn.classList.add('hidden');
+    if (showReservedBtn) showReservedBtn.classList.add('hidden');
+    userEmailSpan.textContent = "Visitante"; // Limpa o email
+    // Redireciona para a página de login se o usuário não estiver autenticado
+    // Se você já está na auth.html, não precisa redirecionar de novo.
+    // Se esta for a index.html, pode redirecionar para auth.html
+    // window.location.href = 'auth.html'; // Remova ou comente se você quer que ele fique na index.html com acesso restrito
   }
+  console.log("--- Fim da Execução toggleUIForAuthStatus ---");
 };
 
 // Adiciona um listener para o evento de mudança de estado da autenticação do Supabase
@@ -1043,10 +1046,7 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   const user = session?.user;
   let userRole = null;
 
-    if (user) {
-    console.log("Usuário logado:", user);
-    console.log("ID do usuário:", user.id);
-    console.log("Email do usuário:", user.email);
+    if (user) {    
     // Você também pode buscar o perfil do usuário aqui, como já está sendo feito
     const { data: profile, error } = await supabase
       .from('profiles')
@@ -1226,12 +1226,14 @@ document.addEventListener("DOMContentLoaded", async () => {
       .eq('id', user.id)
       .single();
 
-    if (profile) {
+          // ********* LOGS CRÍTICOS PARA DEPURAR *********
+    console.log("DOMContentLoaded: Perfil retornado (data):", profileData);
+    console.log("DOMContentLoaded: Erro retornado (error):", profileError);
+    // **********************************************
+
       userRole = profile.role;
       console.log("Papel do usuário (DOMContentLoaded):", userRole);
-    } else if (error) {
-      console.error("Erro ao buscar perfil do usuário no DOMContentLoaded:", error);
-    }
+
   }
 
   // Chamar toggleUIForAuthStatus com o usuário e o papel (que pode ser null se não houver login)
@@ -1253,7 +1255,6 @@ supabase.auth.onAuthStateChange(async (event, session) => {
   let userRole = null;
 
   if (user) {
-    console.log("Evento de Autenticação:", event, "Usuário:", user);
     userEmailSpan.textContent = user.email; // Atualiza o email na UI
 
     // Buscar o papel do usuário
@@ -1262,6 +1263,11 @@ supabase.auth.onAuthStateChange(async (event, session) => {
       .select('role')
       .eq('id', user.id)
       .single();
+
+          // ********* LOGS CRÍTICOS PARA DEPURAR *********
+    console.log("onAuthStateChange: Perfil retornado (data):", profileData);
+    console.log("onAuthStateChange: Erro retornado (error):", profileError);
+    // **********************************************
 
     if (profile) {
       userRole = profile.role;
