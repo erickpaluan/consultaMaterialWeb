@@ -1,9 +1,11 @@
-// SUAS CREDENCIAIS DO SUPABASE AQUI
-const supabaseUrl = "https://rlgsehxrpkxlavxdpzgz.supabase.co"; // Substitua pela sua URL
-const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsZ3NlaHhycGt4bGF2eGRwemd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1OTY2MjgsImV4cCI6MjA2ODE3MjYyOH0.S_doyB0_3GuKRWCb0RXOXzTBvhsiEp_l9X0kWMt86Xg"; // Substitua pela sua Anon Key
+import { createClient } from "https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm";
 
-// AGORA, inicialize o Supabase usando o objeto global 'window.supabase'
-const supabase = window.supabase.createClient(supabaseUrl, supabaseAnonKey);
+// SUAS CREDENCIAIS DO SUPABASE AQUI
+const supabaseUrl = "https://rlgsehxrpkxlavxdpzgz.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJsZ3NlaHhycGt4bGF2eGRwemd6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTI1OTY2MjgsImV4cCI6MjA2ODE3MjYyOH0.S_doyB0_3GuKRWCb0RXOXzTBvhsiEp_l9X0kWMt86Xg";
+
+// Inicialize o Supabase
+const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 document.addEventListener("DOMContentLoaded", () => {
   const loginForm = document.getElementById("login-form");

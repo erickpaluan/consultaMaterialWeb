@@ -15,6 +15,9 @@
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
+      .hidden { /* Adicionada para o controle de visibilidade */
+        display: none !important;
+      }
       .has-error input,
       .has-error select,
       .has-error textarea {
@@ -45,225 +48,266 @@
           <h1 class="text-3xl font-bold tracking-tight text-gray-900">
             Gerenciamento de Retalhos
           </h1>
+          <div id="auth-info" class="flex items-center space-x-4">
+            <span id="user-email" class="text-sm"></span>
+            <button
+              id="logout-btn"
+              class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm hidden"
+            >
+              Sair
+            </button>
+          </div>
           <div class="flex space-x-2">
             <button
               id="open-register-modal-btn"
-              class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300"
+              class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 hidden"
             >
               <i class="fas fa-plus mr-2"></i>Cadastrar Retalho
             </button>
             <button
               id="show-reserved-btn"
-              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 hidden"
             >
               <i class="fas fa-list-alt mr-2"></i>Ver Reservados
             </button>
           </div>
         </div>
       </header>
-      <main>
-        <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
-          <div class="p-6 bg-white rounded-lg shadow-md mb-6">
-            <form
-              id="filter-form"
-              class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 items-end"
-            >
-              <div>
-                <label
-                  for="material"
-                  class="block text-sm font-medium text-gray-700"
-                  >Material</label
-                >
-                <select
-                  id="material"
-                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Todos</option>
-                </select>
-              </div>
-              <div>
-                <label
-                  for="tipo"
-                  class="block text-sm font-medium text-gray-700"
-                  >Tipo</label
-                >
-                <select
-                  id="tipo"
-                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Todos</option>
-                </select>
-              </div>
-              <div>
-                <label
-                  for="espessura"
-                  class="block text-sm font-medium text-gray-700"
-                  >Espessura (mm)</label
-                >
-                <select
-                  id="espessura"
-                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="">Todas</option>
-                </select>
-              </div>
-              <div>
-                <label
-                  for="largura"
-                  class="block text-sm font-medium text-gray-700"
-                  >Largura (m) ≥</label
-                >
-                <input
-                  type="number"
-                  id="largura"
-                  step="0.01"
-                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label
-                  for="altura"
-                  class="block text-sm font-medium text-gray-700"
-                  >Comprimento (m) ≥</label
-                >
-                <input
-                  type="number"
-                  id="altura"
-                  step="0.01"
-                  class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div class="flex space-x-2">
-                <button
-                  type="submit"
-                  class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                >
-                  Buscar
-                </button>
-                <button
-                  type="button"
-                  id="clear-btn"
-                  class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-400 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 hidden"
-                >
-                  Limpar
-                </button>
-              </div>
-            </form>
-          </div>
 
-          <div id="loader" class="text-center p-8 hidden">
+      <div id="authenticated-content" class="hidden">
+        <main>
+          <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
             <div
-              class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"
-            ></div>
-          </div>
-
-          <div id="empty-state" class="text-center text-gray-500 p-8 hidden">
-            <p>Nenhum retalho encontrado com os filtros selecionados.</p>
-          </div>
-
-          <div id="results-container" class="hidden">
-            <div
-              id="tabela-retalhos-container"
-              class="hidden md:block bg-white p-6 rounded-lg shadow-md overflow-x-auto mb-6"
+              id="admin-content"
+              class="mt-4 mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 hidden"
+              role="alert"
             >
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead>
-                  <tr>
-                    <th
-                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      data-sort="numero"
-                    >
-                      Nº
-                    </th>
-                    <th
-                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      data-sort="gaveta"
-                    >
-                      Gaveta
-                    </th>
-                    <th
-                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      data-sort="material"
-                    >
-                      Material
-                    </th>
-                    <th
-                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      data-sort="tipo"
-                    >
-                      Tipo
-                    </th>
-                    <th
-                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      data-sort="espessura"
-                    >
-                      Espessura (mm)
-                    </th>
-                    <th
-                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      data-sort="comprimento"
-                    >
-                      Comprimento (m)
-                    </th>
-                    <th
-                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      data-sort="largura"
-                    >
-                      Largura (m)
-                    </th>
-                    <th
-                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
-                      data-sort="quantidade"
-                    >
-                      Qtd.
-                    </th>
-                    <th
-                      class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Obs
-                    </th>
-                    <th
-                      class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
-                    >
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody
-                  id="tabela-retalhos-body"
-                  class="bg-white divide-y divide-gray-200"
-                ></tbody>
-              </table>
+              <p class="font-bold">Acesso de Administrador</p>
+              <p>Você tem permissões de administrador. Pode cadastrar e gerenciar tudo.</p>
             </div>
 
             <div
-              id="cards-container"
-              class="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4"
-            ></div>
-
-            <div
-              id="pagination-controls"
-              class="flex justify-center items-center space-x-4 mt-6"
+              id="user-content"
+              class="mt-4 mb-6 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 hidden"
+              role="alert"
             >
-              <button
-                id="prev-page-btn"
-                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-300 disabled:opacity-50"
+              <p class="font-bold">Acesso de Usuário Comum</p>
+              <p>Você tem permissões de usuário padrão. Pode visualizar e reservar retalhos.</p>
+            </div>
+
+
+            <div class="p-6 bg-white rounded-lg shadow-md mb-6">
+              <form
+                id="filter-form"
+                class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 items-end"
               >
-                Anterior
-              </button>
-              <span id="page-info" class="text-gray-700 font-medium"
-                >Página 1 de 1</span
+                <div>
+                  <label
+                    for="material"
+                    class="block text-sm font-medium text-gray-700"
+                    >Material</label
+                  >
+                  <select
+                    id="material"
+                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Todos</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    for="tipo"
+                    class="block text-sm font-medium text-gray-700"
+                    >Tipo</label
+                  >
+                  <select
+                    id="tipo"
+                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Todos</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    for="espessura"
+                    class="block text-sm font-medium text-gray-700"
+                    >Espessura (mm)</label
+                  >
+                  <select
+                    id="espessura"
+                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+                    <option value="">Todas</option>
+                  </select>
+                </div>
+                <div>
+                  <label
+                    for="largura"
+                    class="block text-sm font-medium text-gray-700"
+                    >Largura (m) ≥</label
+                  >
+                  <input
+                    type="number"
+                    id="largura"
+                    step="0.01"
+                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label
+                    for="altura"
+                    class="block text-sm font-medium text-gray-700"
+                    >Comprimento (m) ≥</label
+                  >
+                  <input
+                    type="number"
+                    id="altura"
+                    step="0.01"
+                    class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div class="flex space-x-2">
+                  <button
+                    type="submit"
+                    class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                  >
+                    Buscar
+                  </button>
+                  <button
+                    type="button"
+                    id="clear-btn"
+                    class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-gray-400 hover:bg-gray-500 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 hidden"
+                  >
+                    Limpar
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <div id="loader" class="text-center p-8 hidden">
+              <div
+                class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full"
+              ></div>
+            </div>
+
+            <div id="empty-state" class="text-center text-gray-500 p-8 hidden">
+              <p>Nenhum retalho encontrado com os filtros selecionados.</p>
+            </div>
+
+            <div id="results-container" class="hidden">
+              <div
+                id="tabela-retalhos-container"
+                class="hidden md:block bg-white p-6 rounded-lg shadow-md overflow-x-auto mb-6"
               >
-              <button
-                id="next-page-btn"
-                class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-300 disabled:opacity-50"
+                <table class="min-w-full divide-y divide-gray-200">
+                  <thead>
+                    <tr>
+                      <th
+                        class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        data-sort="numero"
+                      >
+                        Nº
+                      </th>
+                      <th
+                        class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        data-sort="gaveta"
+                      >
+                        Gaveta
+                      </th>
+                      <th
+                        class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        data-sort="material"
+                      >
+                        Material
+                      </th>
+                      <th
+                        class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        data-sort="tipo"
+                      >
+                        Tipo
+                      </th>
+                      <th
+                        class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        data-sort="espessura"
+                      >
+                        Espessura (mm)
+                      </th>
+                      <th
+                        class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        data-sort="comprimento"
+                      >
+                        Comprimento (m)
+                      </th>
+                      <th
+                        class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        data-sort="largura"
+                      >
+                        Largura (m)
+                      </th>
+                      <th
+                        class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                        data-sort="quantidade"
+                      >
+                        Qtd.
+                      </th>
+                      <th
+                        class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Obs
+                      </th>
+                      <th
+                        class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    id="tabela-retalhos-body"
+                    class="bg-white divide-y divide-gray-200"
+                  ></tbody>
+                </table>
+              </div>
+
+              <div
+                id="cards-container"
+                class="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4"
+              ></div>
+
+              <div
+                id="pagination-controls"
+                class="flex justify-center items-center space-x-4 mt-6"
               >
-                Próxima
-              </button>
+                <button
+                  id="prev-page-btn"
+                  class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-300 disabled:opacity-50"
+                >
+                  Anterior
+                </button>
+                <span id="page-info" class="text-gray-700 font-medium"
+                  >Página 1 de 1</span
+                >
+                <button
+                  id="next-page-btn"
+                  class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-300 disabled:opacity-50"
+                >
+                  Próxima
+                </button>
+              </div>
             </div>
           </div>
+        </main>
+      </div>
+
+      <div id="unauthenticated-content" class="min-h-[calc(100vh-8rem)] flex items-center justify-center p-8">
+        <div class="text-center bg-white p-8 rounded-lg shadow-md">
+          <h1 class="text-3xl font-bold text-gray-900 mb-4">Acesso Restrito</h1>
+          <p class="text-gray-700 mb-6">Por favor, <a href="auth.html" class="text-blue-600 hover:underline font-semibold">faça login</a> para acessar o sistema de gerenciamento de retalhos.</p>
+          <a href="auth.html" class="inline-flex items-center px-4 py-2 border border-transparent text-base font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+            Ir para Login
+          </a>
         </div>
-      </main>
+      </div>
     </div>
 
     <div
