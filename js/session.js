@@ -68,7 +68,7 @@ export const initializeAuth = async () => {
   ui.logoutBtn.addEventListener("click", async () => {
     await supabase.auth.signOut();
 
-    window.location.href = "auth.html";
+    window.location.href = "login.html";
   });
 
   const { data, error } = await supabase.auth.getSession();
