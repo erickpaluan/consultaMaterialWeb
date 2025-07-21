@@ -12,8 +12,6 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
-
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   </head>
@@ -47,28 +45,47 @@
       </button>
     </div>
 
+    <!-- Avatar do usuário -->
     <div id="auth-info" class="relative" title="Usuário logado">
-  <button id="user-menu-toggle" class="flex items-center text-blue-600 hover:text-blue-800 focus:outline-none text-3xl">
-    <span class="material-icons">account_circle</span>
-  </button>
+      <button id="user-menu-toggle" class="flex items-center focus:outline-none">
+        <img
+          src="https://ui-avatars.com/api/?name=U&background=0D8ABC&color=fff"
+          alt="Avatar"
+          class="w-9 h-9 rounded-full border-2 border-blue-500 shadow"
+        />
+      </button>
 
-  <!-- Dropdown -->
-  <div
-    id="user-dropdown"
-    class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-2 z-50 hidden"
-  >
-    <div class="px-4 py-2 text-sm text-gray-700 border-b">
-      <span id="user-email">email@usuario.com</span>
+      <div
+        id="user-dropdown"
+        class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-2 z-50 hidden"
+      >
+        <div class="px-4 py-2 text-sm text-gray-700 border-b">
+          <div
+              id="admin-content"
+              class="mb-6 border-yellow-500 text-yellow-700 hidden"
+              role="alert"
+            >
+              <p class="font-bold">Administrador</p>
+            </div>
+            <div
+              id="user-content"
+              class="mb-6 border-blue-500 text-blue-700 hidden"
+              role="alert"
+            >
+              <p class="font-bold">Usuário Comum</p>
+        </div>
+          <span id="user-email">email@usuario.com</span>
+        </div>
+      
+            
+        <button
+          id="logout-btn"
+          class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+        >
+          Sair
+        </button>
+      </div>
     </div>
-    <button
-      id="logout-btn"
-      class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
-    >
-      Sair
-    </button>
-  </div>
-</div>
-
   </div>
 </div>
       </header>
@@ -76,28 +93,7 @@
       <div id="authenticated-content" class="hidden">
         <main>
           <div class="mx-auto max-w-7xl py-6 sm:px-6 lg:px-8">
-            <div
-              id="admin-content"
-              class="mt-4 mb-6 p-4 bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 hidden"
-              role="alert"
-            >
-              <p class="font-bold">Acesso de Administrador</p>
-              <p>
-                Você tem permissões de administrador. Pode cadastrar e gerenciar
-                tudo.
-              </p>
-            </div>
-
-            <div
-              id="user-content"
-              class="mt-4 mb-6 p-4 bg-blue-100 border-l-4 border-blue-500 text-blue-700 hidden"
-              role="alert"
-            >
-              <p class="font-bold">Acesso de Usuário Comum</p>
-              <p>
-                Você tem permissões de usuário padrão. Pode visualizar e
-                reservar retalhos.
-              </p>
+            
             </div>
 
             <div class="p-6 bg-white rounded-lg shadow-md mb-6">
