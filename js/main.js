@@ -1,4 +1,5 @@
 // js/main.js
+console.log("main.js carregado");
 
 import { initializeAuth } from "./session.js"; // DICA: Renomeei para session.js para ficar mais claro
 import { initializeRetalhos } from "./retalhos.js";
