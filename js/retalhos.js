@@ -10,6 +10,19 @@ const itemsPerPage = 10;
 let sortColumn = "numero";
 let sortDirection = true;
 
+const toggleClearButtonVisibility = () => {
+  const hasFilter =
+    materialSelect.value ||
+    tipoSelect.value ||
+    espessuraSelect.value ||
+    larguraInput.value ||
+    alturaInput.value;
+  if (hasFilter) {
+    clearBtn.classList.remove("hidden");
+  } else {
+    clearBtn.classList.add("hidden");
+  }
+};
 const renderActionButtons = (role) => {
   document
     .querySelectorAll(".action-buttons-cell, .card-action-buttons")
@@ -154,6 +167,7 @@ export const carregarFiltros = async () => {
     (e) =>
       (ui.espessuraSelect.innerHTML += `<option value="${e}">${e}</option>`)
   );
+  toggleClearButtonVisibility();
 };
 
 export const initializeRetalhos = () => {
