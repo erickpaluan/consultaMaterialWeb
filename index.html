@@ -12,6 +12,8 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet" />
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
   </head>
@@ -19,35 +21,56 @@
     <div class="min-h-full">
       <header class="bg-white shadow">
         <div
-          class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8 flex justify-between items-center"
-        >
-          <h1 class="text-3xl font-bold tracking-tight text-gray-900">
-            Gerenciamento de Retalhos
-          </h1>
-          <div id="auth-info" class="flex items-center space-x-4">
-            <span id="user-email" class="text-sm"></span>
-            <button
-              id="logout-btn"
-              class="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded text-sm hidden"
-            >
-              Sair
-            </button>
-          </div>
-          <div class="flex space-x-2">
-            <button
-              id="open-register-modal-btn"
-              class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 hidden"
-            >
-              <i class="fas fa-plus mr-2"></i>Cadastrar Retalho
-            </button>
-            <button
-              id="show-reserved-btn"
-              class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 hidden"
-            >
-              <i class="fas fa-list-alt mr-2"></i>Ver Reservados
-            </button>
-          </div>
-        </div>
+  class="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8 flex flex-wrap justify-between items-center gap-4"
+>
+  <div class="flex items-center gap-3 flex-shrink-0">
+    <img src="./img/logo.svg" alt="Logo" class="h-8 md:h-10 w-auto" />
+    <h1 class="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900">
+      Gerenciamento de Retalhos
+    </h1>
+  </div>
+
+  <div class="flex items-center gap-4 ml-auto">
+    <!-- Botões -->
+    <div class="flex space-x-2">
+      <button
+        id="open-register-modal-btn"
+        class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 text-sm hidden"
+      >
+        <i class="fas fa-plus mr-2"></i>Cadastrar Retalho
+      </button>
+      <button
+        id="show-reserved-btn"
+        class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md shadow-md transition duration-300 text-sm hidden"
+      >
+        <i class="fas fa-list-alt mr-2"></i>Ver Reservados
+      </button>
+    </div>
+
+    <div id="auth-info" class="relative" title="Usuário logado">
+  <button id="user-menu-toggle" class="flex items-center text-blue-600 hover:text-blue-800 focus:outline-none text-3xl">
+    <span class="material-icons">account_circle</span>
+  </button>
+
+  <!-- Dropdown -->
+  <div
+    id="user-dropdown"
+    class="absolute right-0 mt-2 w-48 bg-white border border-gray-200 rounded-md shadow-lg py-2 z-50 hidden"
+  >
+    <div class="px-4 py-2 text-sm text-gray-700 border-b">
+      <span id="user-email">email@usuario.com</span>
+    </div>
+    <button
+      id="logout-btn"
+      class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100"
+    >
+      Sair
+    </button>
+  </div>
+</div>
+
+  </div>
+</div>
       </header>
 
       <div id="authenticated-content" class="hidden">
@@ -676,4 +699,17 @@
 
     <script type="module" src="./js/main.js"></script>
   </body>
+  <script>
+  const toggle = document.getElementById("user-menu-toggle");
+  const dropdown = document.getElementById("user-dropdown");
+
+  document.addEventListener("click", (e) => {
+    if (toggle.contains(e.target)) {
+      dropdown.classList.toggle("hidden");
+    } else {
+      dropdown.classList.add("hidden");
+    }
+  });
+  
+</script>
 </html>
