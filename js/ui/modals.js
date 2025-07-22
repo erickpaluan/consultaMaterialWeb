@@ -1,9 +1,3 @@
-// js/ui/modals.js
-
-/**
- * Controla a exibição e o fechamento de todos os modais da aplicação.
- */
-
 export function openModal(modalElement) {
   modalElement.classList.remove("hidden");
   setTimeout(() => {

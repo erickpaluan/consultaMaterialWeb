@@ -1,11 +1,3 @@
-// js/ui/components.js
-
-/**
- * Fábrica de componentes HTML.
- * Funções que recebem dados e retornam elementos do DOM ou strings HTML.
- * Isso isola a lógica de criação de HTML.
- */
-
 export function createRetalhoTableRow(item) {
   const row = document.createElement('tr');
   row.className = 'border-b border-gray-200 hover:bg-gray-50';
@@ -57,42 +49,31 @@ export function createReservedItemsTable(data) {
     table.innerHTML = `
       <thead class="bg-gray-200 text-left font-bold">
         <tr>
-          <th class="p-3">Nº Retalho</th>
-          <th class="p-3">OS</th>
-          <th class="p-3">Material</th>
-          <th class="p-3">Medidas (m)</th>
-          <th class="p-3">Esp. (mm)</th>
-          <th class="p-3">Qtd. Reserv.</th>
-          <th class="p-3">Gaveta</th>
-          <th class="p-3">Data Reserva</th>
-          <th class="p-3">Ações</th>
+          <th class="p-3">Nº Retalho</th><th class="p-3">OS</th><th class="p-3">Material</th><th class="p-3">Medidas (m)</th>
+          <th class="p-3">Esp. (mm)</th><th class="p-3">Qtd. Reserv.</th><th class="p-3">Gaveta</th>
+          <th class="p-3">Data Reserva</th><th class="p-3">Ações</th>
         </tr>
       </thead>
       <tbody class="bg-white divide-y divide-gray-200">
         ${data.map(item => createReservedItemRow(item)).join('')}
-      </tbody>
-    `;
+      </tbody>`;
     return table;
 }
 
 function createReservedItemRow(item) {
     const retalho = item.retalhos;
+    if (!retalho) return ''; // Proteção caso o retalho associado tenha sido deletado
     const dataReserva = item.data_reserva ? new Date(item.data_reserva).toLocaleDateString("pt-BR") : "N/A";
     return `
       <tr class="hover:bg-gray-50 transition-colors duration-200">
-        <td class="p-3">${retalho.numero}</td>
-        <td class="p-3">${item.numero_os}</td>
-        <td class="p-3">${retalho.material} - ${retalho.tipo}</td>
-        <td class="p-3">${retalho.comprimento} x ${retalho.largura}</td>
-        <td class="p-3">${retalho.espessura}</td>
-        <td class="p-3">${item.quantidade_reservada}</td>
-        <td class="p-3">${retalho.gaveta}</td>
-        <td class="p-3">${dataReserva}</td>
+        <td class="p-3">${retalho.numero}</td><td class="p-3">${item.numero_os}</td>
+        <td class="p-3">${retalho.material} - ${retalho.tipo}</td><td class="p-3">${retalho.comprimento} x ${retalho.largura}</td>
+        <td class="p-3">${retalho.espessura}</td><td class="p-3">${item.quantidade_reservada}</td>
+        <td class="p-3">${retalho.gaveta}</td><td class="p-3">${dataReserva}</td>
         <td class="p-3">
           <button class="cancel-btn text-red-500 hover:text-red-700 text-lg" title="Cancelar" data-reserva-id="${item.id}" data-retalho-id="${retalho.id}" data-quantidade-reservada="${item.quantidade_reservada}">
             &#x21BA;
           </button>
         </td>
-      </tr>
-    `;
+      </tr>`;
 }

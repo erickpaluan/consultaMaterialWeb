@@ -1,51 +1,28 @@
-// js/state.js
-
-/**
- * Gerencia o estado da aplicação de forma centralizada.
- * Isso evita variáveis globais espalhadas e torna o fluxo de dados previsível.
- */
+import { ui } from './uiElements.js';
 
 const appState = {
-  // Estado da consulta principal
   retalhos: [],
   currentPage: 1,
   totalItems: 0,
-  sort: {
-    column: "numero",
-    direction: true, // true para 'asc', false para 'desc'
-  },
-  filters: {
-    material: "",
-    tipo: "",
-    espessura: "",
-    largura: "",
-    altura: "",
-  },
+  sort: { column: "numero", direction: true },
+  filters: { material: "", tipo: "", espessura: "", largura: "", altura: "" },
   isLoading: false,
-
-  // Estado para os modais
-  currentRetalhoToReserve: {
-    id: null,
-    quantidadeDisponivel: 0,
-  },
+  currentRetalhoToReserve: { id: null, quantidadeDisponivel: 0 },
   existingMaterials: [],
   existingTypes: [],
 };
 
-// Funções para acessar e modificar o estado de forma segura.
 export const getState = () => appState;
+export const setState = (newState) => { Object.assign(appState, newState); };
 
-export const setState = (newState) => {
-  Object.assign(appState, newState);
-};
-
-export const updateFilters = (form) => {
-    appState.filters.material = form.material.value;
-    appState.filters.tipo = form.tipo.value;
-    appState.filters.espessura = form.espessura.value;
-    appState.filters.largura = form.largura.value;
-    appState.filters.altura = form.altura.value;
-    appState.currentPage = 1; // Reseta a página ao aplicar novos filtros
+export const updateFilters = () => {
+    const formElements = ui.filterForm.elements;
+    appState.filters.material = formElements.material.value;
+    appState.filters.tipo = formElements.tipo.value;
+    appState.filters.espessura = formElements.espessura.value;
+    appState.filters.largura = formElements.largura.value;
+    appState.filters.altura = formElements.altura.value;
+    appState.currentPage = 1;
 };
 
 export const resetFilters = () => {

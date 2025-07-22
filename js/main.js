@@ -1,81 +1,70 @@
-// js/main.js
-import { DOM_SELECTORS, AUTO_REFRESH_INTERVAL } from './config.js';
+import { ui } from './uiElements.js';
 import * as handlers from './handlers.js';
 import { openModal, closeModal } from './ui/modals.js';
-import { resetRegisterForm } from './ui/dom.js';
+import { initializeAuth } from './session.js';
+import { AUTO_REFRESH_INTERVAL } from './config.js';
 
-/**
- * Ponto de entrada da aplicação (Entrypoint).
- * Responsável por inicializar os event listeners e carregar os dados iniciais.
- */
+let isAppInitialized = false;
 
-// Atalho para querySelector
-const get = (selector) => document.querySelector(selector);
+export function initializeApp() {
+  if (isAppInitialized) return;
+  console.log("Inicializando a aplicação principal...");
 
-function initializeEventListeners() {
-  // Filtros da consulta principal
-  get(DOM_SELECTORS.filterForm).addEventListener('submit', (e) => e.preventDefault());
-  get(DOM_SELECTORS.materialSelect).addEventListener('change', handlers.handleLoadTiposParaFiltro);
-  get(DOM_SELECTORS.tipoSelect).addEventListener('change', handlers.handleLoadEspessurasParaFiltro);
+  // Listeners de Filtros
+  ui.filterForm.addEventListener('submit', (e) => e.preventDefault());
+  ui.materialSelect.addEventListener('change', handlers.handleLoadTiposParaFiltro);
+  ui.tipoSelect.addEventListener('change', handlers.handleLoadEspessurasParaFiltro);
+  const filterInputs = ui.filterForm.querySelectorAll('select, input');
+  filterInputs.forEach(input => {
+    input.addEventListener('change', handlers.handleFilterFormChange);
+    if (input.type === 'number') input.addEventListener('keyup', handlers.handleFilterFormChange);
+  });
+  ui.clearBtn.addEventListener('click', handlers.handleClearFilters);
+
+  // Paginação e Ordenação
+  ui.prevPageBtn.addEventListener('click', () => handlers.handlePageChange(-1));
+  ui.nextPageBtn.addEventListener('click', () => handlers.handlePageChange(1));
+  ui.resultsTable.addEventListener('click', handlers.handleSort);
+
+  // Ações e Modais Globais
+  ui.openRegisterModalBtn.addEventListener('click', handlers.handleOpenRegisterModal);
+  ui.showReservedBtn.addEventListener('click', () => handlers.handleFetchReservedItems());
   
-  // Dispara a busca em qualquer mudança nos filtros
-  const filterInputs = [DOM_SELECTORS.materialSelect, DOM_SELECTORS.tipoSelect, DOM_SELECTORS.espessuraSelect, DOM_SELECTORS.larguraInput, DOM_SELECTORS.alturaInput];
-  filterInputs.forEach(selector => get(selector).addEventListener('change', handlers.handleFilterFormChange));
-  get(DOM_SELECTORS.larguraInput).addEventListener('keyup', handlers.handleFilterFormChange);
-  get(DOM_SELECTORS.alturaInput).addEventListener('keyup', handlers.handleFilterFormChange);
+  // Listeners do Modal de CADASTRO (Corrigido e com novas adições)
+  ui.closeRegisterModalBtn.addEventListener('click', () => closeModal(ui.registerModal));
+  ui.registerForm.addEventListener('submit', handlers.handleRegisterSubmit);
+  ui.regMaterialSelect.addEventListener('change', handlers.handleMaterialCadastroChange);
+  ui.regTipoSelect.addEventListener('change', handlers.handleTipoCadastroChange);
+  ui.regSalvarNovoMaterialBtn.addEventListener('click', handlers.handleSalvarNovoMaterial);
+  ui.regSalvarNovoTipoBtn.addEventListener('click', handlers.handleSalvarNovoTipo);
+  ui.regClearBtn.addEventListener('click', handlers.handleClearRegisterForm);
 
-  get(DOM_SELECTORS.clearBtn).addEventListener('click', handlers.handleClearFilters);
+  // Listeners do Modal de RESERVA
+  ui.resultsContainer.addEventListener('click', handlers.handleReserveClick);
+  ui.closeReserveModalBtn.addEventListener('click', () => closeModal(ui.reserveModal));
+  ui.reserveConfirmBtn.addEventListener('click', handlers.handleConfirmReserve);
   
-  // Paginação
-  get(DOM_SELECTORS.prevPageBtn).addEventListener('click', () => handlers.handlePageChange(-1));
-  get(DOM_SELECTORS.nextPageBtn).addEventListener('click', () => handlers.handlePageChange(1));
+  // Listeners do Modal de ITENS RESERVADOS
+  ui.closeModalBtn.addEventListener('click', () => closeModal(ui.reservedModal));
+  ui.osSearchInput.addEventListener('input', handlers.handleSearchReserved);
+  ui.reservedModalContent.addEventListener('click', handlers.handleCancelReserve);
+  ui.createPdfBtn.addEventListener('click', handlers.handleGeneratePdf);
 
-  // Ordenação da Tabela
-  get(DOM_SELECTORS.resultsTable).addEventListener('click', handlers.handleSort);
-
-  // Botões de Ação e Modais
-  get(DOM_SELECTORS.openRegisterModalBtn).addEventListener('click', () => openModal(get(DOM_SELECTORS.registerModal)));
-  get(DOM_SELECTORS.showReservedBtn).addEventListener('click', () => handlers.handleFetchReservedItems());
-  
-  // Modal de Cadastro
-  const registerModal = get(DOM_SELECTORS.registerModal);
-  get(DOM_SELECTORS.closeRegisterModalBtn).addEventListener('click', () => closeModal(registerModal));
-  get(DOM_SELECTORS.registerForm).addEventListener('submit', handlers.handleRegisterSubmit);
-  get(DOM_SELECTORS.regClearBtn).addEventListener('click', () => resetRegisterForm(get(DOM_SELECTORS.registerForm)));
-
-  // Modal de Reserva
-  const reserveModal = get(DOM_SELECTORS.reserveModal);
-  get(DOM_SELECTORS.resultsContainer).addEventListener('click', handlers.handleReserveClick);
-  get(DOM_SELECTORS.closeReserveModalBtn).addEventListener('click', () => closeModal(reserveModal));
-  get(DOM_SELECTORS.reserveConfirmBtn).addEventListener('click', handlers.handleConfirmReserve);
-  
-  // Modal de Reservados
-  const reservedModal = get(DOM_SELECTORS.reservedModal);
-  get(DOM_SELECTORS.closeModalBtn).addEventListener('click', () => closeModal(reservedModal));
-  get(DOM_SELECTORS.osSearchInput).addEventListener('input', handlers.handleSearchReserved);
-  get(DOM_SELECTORS.reservedModalContent).addEventListener('click', handlers.handleCancelReserve);
-  get(DOM_SELECTORS.createPdfBtn).addEventListener('click', handlers.handleGeneratePdf);
-
-  // Fechar modais ao clicar fora
-  [registerModal, reserveModal, reservedModal].forEach(modal => {
-    modal.addEventListener('click', (e) => {
-        if (e.target === modal) closeModal(modal);
-    });
+  // Lógica para fechar modais ao clicar fora
+  [ui.registerModal, ui.reserveModal, ui.reservedModal].forEach(modal => {
+    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
   });
 
   // Atualização automática
   setInterval(handlers.handleLoadFilterOptions, AUTO_REFRESH_INTERVAL);
   window.addEventListener('focus', handlers.handleLoadFilterOptions);
-}
 
-function initialLoad() {
+  // Carga de dados inicial da aplicação
   handlers.handleLoadFilterOptions();
   handlers.handleLoadRetalhos();
+
+  isAppInitialized = true;
 }
 
-// Inicia a aplicação quando o DOM estiver pronto.
-document.addEventListener('DOMContentLoaded', () => {
-  console.log("Aplicação iniciada.");
-  initializeEventListeners();
-  initialLoad();
-});
+// Ponto de entrada da aplicação
+document.addEventListener('DOMContentLoaded', initializeAuth);
