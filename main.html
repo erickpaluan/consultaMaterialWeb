@@ -1,379 +1,262 @@
 <!DOCTYPE html>
-<html lang="pt-BR" class="h-full bg-gray-100">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Gerenciamento de Retalhos</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Gestão de Retalhos</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-  </head>
-  <body class="h-full font-sans antialiased bg-gray-50">
-    <header class="bg-white shadow-md fixed top-0 left-0 right-0 z-20">
-      <div class="mx-auto max-w-7xl px-4 py-4 flex justify-between items-center">
-        <div class="flex items-center gap-3">
-          <img src="./img/logo.svg" alt="Logo" class="h-9 w-auto" />
-          <h1 class="text-2xl font-extrabold text-gray-900">Gerenciamento de Retalhos</h1>
+
+    <style>
+        /* Estilo para animação do spinner */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .animate-spin {
+            animation: spin 1s linear infinite;
+        }
+        /* Estilo para a seta de ordenação da tabela */
+        th[data-sort] { cursor: pointer; }
+        th .sort-icon {
+            display: inline-block;
+            width: 1em;
+            height: 1em;
+            color: #9ca3af; /* gray-400 */
+            transition: all 0.2s;
+        }
+        th.sort-asc .sort-icon { transform: rotate(0deg); color: #1f2937; /* gray-800 */ }
+        th.sort-desc .sort-icon { transform: rotate(180deg); color: #1f2937; /* gray-800 */ }
+    </style>
+</head>
+<body class="bg-gray-100 font-sans">
+
+    <header class="bg-white shadow-md">
+        <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <svg class="h-8 w-8 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4M4 7l8 4.5 8-4.5M12 11.5V21"/>
+                </svg>
+                <h1 class="text-xl font-bold text-gray-800">Gestão de Retalhos</h1>
+            </div>
+            <div class="text-sm text-gray-600">
+                <span>Usuário: Admin</span>
+            </div>
         </div>
-        <div id="auth-info" class="relative">
-          <button id="user-menu-toggle" class="flex items-center focus:outline-none ring-2 ring-transparent hover:ring-blue-400 rounded-full transition-all duration-200" title="Menu do Usuário">
-            <img src="https://www.gravatar.com/avatar?d=mp" alt="Avatar" class="h-9 w-9 rounded-full" />
-          </button>
-          <div id="user-dropdown" class="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 hidden">
-            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Perfil</a>
-            <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Configurações</a>
-            <button class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 rounded-b-md" onclick="/* Função de sair */">Sair</button>
-          </div>
-        </div>
-      </div>
     </header>
 
-    <div class="pt-24 flex h-[calc(100vh-6rem)]">
-      <nav class="w-64 bg-white border-r border-gray-200 p-4 space-y-3 shadow-sm hidden md:block" id="sidebar">
-        <button class="w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors duration-200 group" onclick="document.getElementById('open-register-modal-btn').click()">
-          <i class="fas fa-plus text-lg group-hover:scale-110 transition-transform"></i> Cadastrar Retalho
-        </button>
-        <div class="space-y-1">
-          <a href="#" class="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200">
-            <i class="fas fa-box text-base"></i> Estoque
-          </a>
-          <a href="#" class="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200" onclick="document.getElementById('show-reserved-btn').click()">
-            <i class="fas fa-list-alt text-base"></i> Ver Reservados
-          </a>
-          <a href="#" class="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 rounded-md hover:bg-gray-100 hover:text-blue-600 transition-colors duration-200">
-            <i class="fas fa-history text-base"></i> Histórico
-          </a>
-        </div>
-        <div class="pt-4 border-t border-gray-200">
-          <button class="w-full flex items-center gap-3 px-4 py-2 text-sm font-medium text-red-600 rounded-md hover:bg-red-50 hover:text-red-700 transition-colors duration-200">
-            <i class="fas fa-sign-out-alt text-base"></i> Sair
-          </button>
-        </div>
-      </nav>
+    <main class="container mx-auto p-4 flex flex-col md:flex-row gap-6">
 
-      <main class="flex-1 p-6 overflow-y-auto bg-gray-50" id="main-content">
-        <div class="mx-auto max-w-7xl">
-          <div class="p-6 bg-white rounded-lg shadow-md mb-6 border border-gray-200">
-            <form id="filter-form" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-6 gap-4 items-end">
-              <div>
-                <label for="material" class="block text-sm font-medium text-gray-700 mb-1">Material</label>
-                <select id="material" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                  <option value="">Todos</option>
-                  <option value="Aço Inox">Aço Inox</option>
-                  <option value="Alumínio">Alumínio</option>
-                  <option value="Cobre">Cobre</option>
-                </select>
-              </div>
-              <div>
-                <label for="tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-                <select id="tipo" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                  <option value="">Todos</option>
-                  <option value="Chapa">Chapa</option>
-                  <option value="Barra">Barra</option>
-                  <option value="Tubo">Tubo</option>
-                </select>
-              </div>
-              <div>
-                <label for="espessura" class="block text-sm font-medium text-gray-700 mb-1">Espessura (mm)</label>
-                <select id="espessura" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                  <option value="">Todas</option>
-                  <option value="1">1</option>
-                  <option value="2">2</option>
-                  <option value="3">3</option>
-                </select>
-              </div>
-              <div>
-                <label for="largura" class="block text-sm font-medium text-gray-700 mb-1">Largura (m) &ge;</label>
-                <input type="number" id="largura" step="0.01" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ex: 1.5" />
-              </div>
-              <div>
-                <label for="altura" class="block text-sm font-medium text-gray-700 mb-1">Comprimento (m) &ge;</label>
-                <input type="number" id="altura" step="0.01" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Ex: 2.0" />
-              </div>
-              <div class="flex space-x-2 mt-auto">
-                <button type="submit" class="w-full inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200">
-                  <i class="fas fa-search mr-2"></i> Buscar
+        <aside class="w-full md:w-1/4 lg:w-1/5">
+            <div class="bg-white p-4 rounded-lg shadow-sm space-y-3">
+                <h2 class="font-bold text-lg border-b pb-2 mb-3">Ações</h2>
+                <button id="open-register-modal-btn" class="w-full bg-green-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-green-600 transition-colors">
+                    Cadastrar Retalho
                 </button>
-                <button type="button" id="clear-btn" class="w-full inline-flex justify-center py-2 px-4 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200 hidden">
-                  <i class="fas fa-times mr-2"></i> Limpar
+                <button id="show-reserved-btn" class="w-full bg-yellow-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-yellow-600 transition-colors">
+                    Ver Reservados
                 </button>
-              </div>
+            </div>
+        </aside>
+
+        <section class="w-full md:w-3/4 lg:w-4/5">
+            <div class="bg-white p-4 rounded-lg shadow-sm mb-6">
+                <form id="form">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
+                        <div>
+                            <label for="material-select" class="block text-sm font-medium text-gray-700">Material</label>
+                            <select id="material-select" name="material" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"></select>
+                        </div>
+                        <div>
+                            <label for="tipo-select" class="block text-sm font-medium text-gray-700">Tipo</label>
+                            <select id="tipo-select" name="tipo" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"></select>
+                        </div>
+                        <div>
+                            <label for="espessura-select" class="block text-sm font-medium text-gray-700">Espessura</label>
+                            <select id="espessura-select" name="espessura" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"></select>
+                        </div>
+                        <div>
+                            <label for="largura-input" class="block text-sm font-medium text-gray-700">Largura (>= m)</label>
+                            <input type="number" id="largura-input" name="largura" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="Ex: 0.5">
+                        </div>
+                        <div>
+                            <label for="altura-input" class="block text-sm font-medium text-gray-700">Comprimento (>= m)</label>
+                            <input type="number" id="altura-input" name="altura" class="mt-1 focus:ring-blue-500 focus:border-blue-500 block w-full shadow-sm sm:text-sm border-gray-300 rounded-md" placeholder="Ex: 1.2">
+                        </div>
+                    </div>
+                    <div class="mt-4">
+                        <button type="button" id="clear-btn" class="hidden text-sm text-blue-600 hover:text-blue-800">Limpar filtros</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="relative">
+                <div id="loader" class="hidden absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                    <div class="w-16 h-16 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+
+                <div id="empty-state" class="hidden text-center bg-white p-12 rounded-lg shadow-sm">
+                    <h3 class="text-xl font-medium text-gray-800">Nenhum retalho encontrado</h3>
+                    <p class="mt-2 text-gray-500">Tente ajustar os filtros ou cadastre um novo retalho.</p>
+                </div>
+
+                <div id="results-container" class="hidden">
+                    <div class="hidden md:block bg-white rounded-lg shadow-sm overflow-hidden">
+                        <table id="results-table" class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th data-sort="numero" class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Nº <span class="sort-icon">▲</span></th>
+                                    <th data-sort="gaveta" class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Gaveta <span class="sort-icon">▲</span></th>
+                                    <th data-sort="material" class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Material <span class="sort-icon">▲</span></th>
+                                    <th data-sort="tipo" class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Tipo <span class="sort-icon">▲</span></th>
+                                    <th data-sort="espessura" class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Esp. <span class="sort-icon">▲</span></th>
+                                    <th data-sort="comprimento" class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Comp. <span class="sort-icon">▲</span></th>
+                                    <th data-sort="largura" class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Larg. <span class="sort-icon">▲</span></th>
+                                    <th data-sort="quantidade" class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Qtd <span class="sort-icon">▲</span></th>
+                                    <th class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Obs</th>
+                                    <th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="results-table-body" class="bg-white divide-y divide-gray-200 text-sm text-gray-700">
+                                </tbody>
+                        </table>
+                    </div>
+                    <div id="results-cards-container" class="md:hidden grid grid-cols-1 gap-4">
+                        </div>
+
+                    <div id="pagination-controls" class="hidden mt-6 flex justify-between items-center text-sm">
+                        <button id="prev-page-btn" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Anterior
+                        </button>
+                        <span id="page-info" class="text-gray-600"></span>
+                        <button id="next-page-btn" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed">
+                            Próxima
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <div id="register-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-20">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-2xl shadow-lg rounded-md bg-white transform transition-all duration-300 scale-95 opacity-0">
+            <h3 class="text-lg font-medium leading-6 text-gray-900 border-b pb-3">Cadastrar Novo Retalho</h3>
+            <form id="register-form" class="mt-4 space-y-4">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="reg-numero" class="block text-sm font-medium text-gray-700">Número</label>
+                        <input type="number" id="reg-numero" class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div>
+                        <label for="reg-gaveta" class="block text-sm font-medium text-gray-700">Gaveta</label>
+                        <input type="text" id="reg-gaveta" class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                     <div>
+                        <label for="reg-quantidade" class="block text-sm font-medium text-gray-700">Quantidade</label>
+                        <input type="number" id="reg-quantidade" value="1" class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label for="reg-material" class="block text-sm font-medium text-gray-700">Material</label>
+                        <select id="reg-material" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></select>
+                         <div id="reg-novo-material-container" class="hidden mt-2 p-2 border rounded-md bg-gray-50">
+                            <input id="reg-novo-material-input" type="text" placeholder="Nome do Novo Material" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <div class="flex space-x-2 mt-2">
+                                <button type="button" id="reg-salvar-novo-material-btn" class="text-xs bg-green-500 text-white px-2 py-1 rounded">Salvar</button>
+                                <button type="button" id="reg-cancelar-novo-material-btn" class="text-xs bg-gray-300 px-2 py-1 rounded">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                     <div>
+                        <label for="reg-tipo" class="block text-sm font-medium text-gray-700">Tipo</label>
+                        <select id="reg-tipo" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></select>
+                         <div id="reg-novo-tipo-container" class="hidden mt-2 p-2 border rounded-md bg-gray-50">
+                            <input id="reg-novo-tipo-input" type="text" placeholder="Nome do Novo Tipo" class="w-full border-gray-300 rounded-md shadow-sm">
+                            <div class="flex space-x-2 mt-2">
+                                <button type="button" id="reg-salvar-novo-tipo-btn" class="text-xs bg-green-500 text-white px-2 py-1 rounded">Salvar</button>
+                                <button type="button" id="reg-cancelar-novo-tipo-btn" class="text-xs bg-gray-300 px-2 py-1 rounded">Cancelar</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div>
+                        <label for="reg-espessura" class="block text-sm font-medium text-gray-700">Espessura (mm)</label>
+                        <input type="number" id="reg-espessura" class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div>
+                        <label for="reg-comprimento" class="block text-sm font-medium text-gray-700">Comprimento (m)</label>
+                        <input type="number" step="0.01" id="reg-comprimento" class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                    <div>
+                        <label for="reg-largura" class="block text-sm font-medium text-gray-700">Largura (m)</label>
+                        <input type="number" step="0.01" id="reg-largura" class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                    </div>
+                </div>
+                <div>
+                    <label for="reg-obs" class="block text-sm font-medium text-gray-700">Observação</label>
+                    <textarea id="reg-obs" rows="2" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></textarea>
+                </div>
+                <div class="pt-4 flex justify-end space-x-3 border-t">
+                    <button id="close-register-modal-btn" type="button" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-300">Fechar</button>
+                    <button id="reg-clear-btn" type="button" class="bg-gray-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-gray-600">Limpar</button>
+                    <button id="reg-submit-btn" type="submit" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 flex items-center disabled:opacity-50">
+                        <span class="reg-spinner hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span>
+                        <span class="reg-btn-text">Cadastrar Retalho</span>
+                    </button>
+                </div>
             </form>
-          </div>
-
-          <div id="loader" class="text-center p-8 hidden">
-            <div class="animate-spin inline-block w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full" role="status" aria-label="Carregando"></div>
-            <p class="mt-4 text-gray-600">Carregando retalhos...</p>
-          </div>
-
-          <div id="empty-state" class="text-center text-gray-500 p-8 hidden">
-            <i class="fas fa-box-open text-6xl mb-4 text-gray-300"></i>
-            <p class="text-lg">Nenhum retalho encontrado com os filtros selecionados.</p>
-            <p class="text-sm mt-2">Tente ajustar seus critérios de busca ou cadastre um novo retalho.</p>
-          </div>
-
-          <div id="results-container" class="hidden">
-            <div id="tabela-retalhos-container" class="hidden md:block bg-white p-6 rounded-lg shadow-md overflow-x-auto mb-6 border border-gray-200">
-              <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                  <tr>
-                    <th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="numero">
-                      Nº <i class="fas fa-sort ml-1"></i>
-                    </th>
-                    <th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="gaveta">
-                      Gaveta <i class="fas fa-sort ml-1"></i>
-                    </th>
-                    <th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="material">
-                      Material <i class="fas fa-sort ml-1"></i>
-                    </th>
-                    <th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="tipo">
-                      Tipo <i class="fas fa-sort ml-1"></i>
-                    </th>
-                    <th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="espessura">
-                      Espessura (mm) <i class="fas fa-sort ml-1"></i>
-                    </th>
-                    <th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="comprimento">
-                      Comprimento (m) <i class="fas fa-sort ml-1"></i>
-                    </th>
-                    <th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="largura">
-                      Largura (m) <i class="fas fa-sort ml-1"></i>
-                    </th>
-                    <th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors" data-sort="quantidade">
-                      Qtd. <i class="fas fa-sort ml-1"></i>
-                    </th>
-                    <th class="p-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Obs
-                    </th>
-                    <th class="p-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ações
-                    </th>
-                  </tr>
-                </thead>
-                <tbody id="tabela-retalhos-body" class="bg-white divide-y divide-gray-200">
-                  </tbody>
-              </table>
-            </div>
-
-            <div id="cards-container" class="md:hidden grid grid-cols-1 sm:grid-cols-2 gap-4">
-              </div>
-
-            <div id="pagination-controls" class="flex justify-center items-center space-x-4 mt-6">
-              <button id="prev-page-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-300 disabled:opacity-50 transition-colors duration-200">
-                <i class="fas fa-arrow-left mr-2"></i> Anterior
-              </button>
-              <span id="page-info" class="text-gray-700 font-medium">Página 1 de 1</span>
-              <button id="next-page-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-md shadow-sm hover:bg-gray-300 disabled:opacity-50 transition-colors duration-200">
-                Próxima <i class="fas fa-arrow-right ml-2"></i>
-              </button>
-            </div>
-          </div>
         </div>
-      </main>
+    </div>
+    
+    <div id="reserve-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-20">
+        <div class="relative top-20 mx-auto p-5 border w-full max-w-md shadow-lg rounded-md bg-white transform transition-all duration-300 scale-95 opacity-0">
+             <h3 class="text-lg font-medium leading-6 text-gray-900">Reservar Retalho</h3>
+             <div class="mt-4 space-y-4">
+                <div>
+                    <label for="reserve-input-os" class="block text-sm font-medium text-gray-700">Número da OS</label>
+                    <input type="text" id="reserve-input-os" class="mt-1 w-full border-gray-300 rounded-md shadow-sm" placeholder="Digite a OS">
+                </div>
+                <div id="reserve-quantity-container" class="hidden">
+                     <label for="reserve-input-quantidade" class="block text-sm font-medium text-gray-700">Quantidade a Reservar</label>
+                     <input type="number" id="reserve-input-quantidade" min="1" value="1" class="mt-1 w-full border-gray-300 rounded-md shadow-sm">
+                     <p id="reserve-available-text" class="text-xs text-gray-500 mt-1"></p>
+                </div>
+             </div>
+             <div class="mt-6 flex justify-end space-x-3">
+                 <button id="close-reserve-modal-btn" type="button" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-300">Cancelar</button>
+                 <button id="reserve-confirm-btn" type="button" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600">Confirmar Reserva</button>
+             </div>
+        </div>
+    </div>
+    
+    <div id="reserved-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full z-20">
+        <div class="relative top-10 mx-auto p-5 border w-full max-w-6xl shadow-lg rounded-md bg-white transform transition-all duration-300 scale-95 opacity-0">
+            <div class="flex justify-between items-center border-b pb-3">
+                <h3 class="text-lg font-medium leading-6 text-gray-900">Retalhos Reservados</h3>
+                <button id="close-modal-btn" class="text-gray-400 hover:text-gray-600">&times;</button>
+            </div>
+            <div class="my-4 flex justify-between items-center">
+                <input type="text" id="os-search-input" class="w-full md:w-1/3 border-gray-300 rounded-md shadow-sm" placeholder="Buscar por OS...">
+                <button id="create-pdf-btn" class="bg-red-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-red-600 flex items-center space-x-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M6 2a2 2 0 00-2 2v12a2 2 0 002 2h8a2 2 0 002-2V4a2 2 0 00-2-2H6zm4 12a1 1 0 100-2 1 1 0 000 2zM6 6a1 1 0 011-1h6a1 1 0 110 2H7a1 1 0 01-1-1zm1 3a1 1 0 100 2h6a1 1 0 100-2H7z" clip-rule="evenodd" /></svg>
+                    <span>Gerar PDF</span>
+                </button>
+            </div>
+            <div class="relative min-h-[200px] max-h-[60vh] overflow-y-auto">
+                <div id="modal-loader" class="hidden absolute inset-0 bg-white bg-opacity-75 flex items-center justify-center z-10">
+                    <div class="w-12 h-12 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+                </div>
+                <div id="reserved-modal-content">
+                    </div>
+            </div>
+        </div>
     </div>
 
-    <div id="register-modal" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center p-4 z-50 hidden animate-fade-in">
-      <div class="bg-white p-8 rounded-lg shadow-xl w-full max-w-lg transform scale-95 transition-transform duration-300 ease-out">
-        <div class="flex justify-between items-center mb-6">
-          <h3 class="text-2xl font-bold text-gray-800">Cadastrar Novo Retalho</h3>
-          <button type="button" onclick="toggleModal(false)" class="text-gray-400 hover:text-gray-600 focus:outline-none text-2xl" title="Fechar">
-            <i class="fas fa-times"></i>
-          </button>
-        </div>
-        <form id="register-form" class="space-y-5">
-          <div>
-            <label for="reg-material" class="block text-sm font-medium text-gray-700 mb-1">Material</label>
-            <input type="text" id="reg-material" placeholder="Ex: Aço Carbono" class="w-full border-gray-300 border rounded-md px-4 py-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" required />
-          </div>
-          <div>
-            <label for="reg-tipo" class="block text-sm font-medium text-gray-700 mb-1">Tipo</label>
-            <input type="text" id="reg-tipo" placeholder="Ex: Chapa" class="w-full border-gray-300 border rounded-md px-4 py-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" required />
-          </div>
-          <div>
-            <label for="reg-espessura" class="block text-sm font-medium text-gray-700 mb-1">Espessura (mm)</label>
-            <input type="number" id="reg-espessura" placeholder="Ex: 5.0" step="0.01" class="w-full border-gray-300 border rounded-md px-4 py-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" required />
-          </div>
-          <div>
-            <label for="reg-altura" class="block text-sm font-medium text-gray-700 mb-1">Comprimento (m)</label>
-            <input type="number" id="reg-altura" placeholder="Ex: 1.25" step="0.01" class="w-full border-gray-300 border rounded-md px-4 py-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" required />
-          </div>
-          <div>
-            <label for="reg-largura" class="block text-sm font-medium text-gray-700 mb-1">Largura (m)</label>
-            <input type="number" id="reg-largura" placeholder="Ex: 0.80" step="0.01" class="w-full border-gray-300 border rounded-md px-4 py-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200" required />
-          </div>
-          <div class="flex justify-end gap-3 pt-4">
-            <button type="button" onclick="toggleModal(false)" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-medium px-5 py-2 rounded-md transition-colors duration-200">
-              Cancelar
-            </button>
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium px-5 py-2 rounded-md transition-colors duration-200">
-              <i class="fas fa-save mr-2"></i> Salvar
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
-
-    <script type="module" src="./js/main.js"></script>
-
-    <script>
-      // Função para mostrar/ocultar o modal de cadastro
-      const registerModal = document.getElementById("register-modal");
-      const openRegisterModalBtn = document.getElementById("open-register-modal-btn");
-
-      function toggleModal(show) {
-        if (show) {
-          registerModal.classList.remove("hidden");
-          registerModal.querySelector(".transform").classList.add("scale-100");
-          registerModal.querySelector(".transform").classList.remove("scale-95");
-        } else {
-          registerModal.querySelector(".transform").classList.add("scale-95");
-          registerModal.querySelector(".transform").classList.remove("scale-100");
-          setTimeout(() => {
-            registerModal.classList.add("hidden");
-          }, 300); // Espera a transição terminar antes de ocultar
-        }
-      }
-
-      // Abre o modal ao clicar no botão de cadastro
-      if (openRegisterModalBtn) {
-        openRegisterModalBtn.addEventListener("click", () => toggleModal(true));
-      }
-
-      // Implementação básica do dropdown do usuário (você precisará expandir com a lógica de autenticação)
-      const userMenuToggle = document.getElementById('user-menu-toggle');
-      const userDropdown = document.getElementById('user-dropdown');
-
-      if (userMenuToggle && userDropdown) {
-        userMenuToggle.addEventListener('click', () => {
-          userDropdown.classList.toggle('hidden');
-        });
-
-        // Fecha o dropdown se clicar fora
-        document.addEventListener('click', (event) => {
-          if (!userMenuToggle.contains(event.target) && !userDropdown.contains(event.target)) {
-            userDropdown.classList.add('hidden');
-          }
-        });
-      }
-
-      // Adiciona o filtro de busca no main.js se a lógica for mais complexa ou mantem aqui se for simples
-      // Por simplicidade, mantive o listener aqui, mas idealmente seria no main.js junto com a lógica de carregamento de dados
-      const searchInput = document.getElementById("search-input"); // Esta ID não existe na sua UI original, considere adicioná-la se quiser uma barra de busca global
-      if (searchInput) {
-        searchInput.addEventListener("input", (e) => {
-          const termo = e.target.value.toLowerCase();
-          document.querySelectorAll("#tabela-retalhos-body tr, #cards-container > div").forEach((item) => {
-            item.style.display = item.innerText.toLowerCase().includes(termo) ? "" : "none";
-          });
-        });
-      }
-
-      // Função para mostrar o botão "Limpar" quando os filtros são preenchidos
-      const filterForm = document.getElementById('filter-form');
-      const clearBtn = document.getElementById('clear-btn');
-
-      if (filterForm && clearBtn) {
-        filterForm.addEventListener('input', () => {
-          const inputs = Array.from(filterForm.elements);
-          const hasFilters = inputs.some(input => {
-            if (input.type === 'text' || input.type === 'number') {
-              return input.value !== '';
-            }
-            if (input.tagName === 'SELECT') {
-              return input.value !== '';
-            }
-            return false;
-          });
-          clearBtn.classList.toggle('hidden', !hasFilters);
-        });
-
-        clearBtn.addEventListener('click', () => {
-          filterForm.reset();
-          clearBtn.classList.add('hidden');
-          // Acione a busca novamente para redefinir os resultados
-          filterForm.dispatchEvent(new Event('submit'));
-        });
-      }
-
-      // Exemplo de como você pode popular a tabela e os cards com dados (isso deve vir do seu main.js)
-      // function renderRetalhos(data) {
-      //   const tableBody = document.getElementById('tabela-retalhos-body');
-      //   const cardsContainer = document.getElementById('cards-container');
-      //   tableBody.innerHTML = '';
-      //   cardsContainer.innerHTML = '';
-
-      //   if (data.length === 0) {
-      //     document.getElementById('empty-state').classList.remove('hidden');
-      //     document.getElementById('results-container').classList.add('hidden');
-      //     return;
-      //   } else {
-      //     document.getElementById('empty-state').classList.add('hidden');
-      //     document.getElementById('results-container').classList.remove('hidden');
-      //   }
-
-      //   data.forEach(retalho => {
-      //     // Renderizar linha da tabela
-      //     const tr = document.createElement('tr');
-      //     tr.className = 'hover:bg-gray-50';
-      //     tr.innerHTML = `
-      //       <td class="p-3 whitespace-nowrap text-sm text-gray-900 text-center">${retalho.numero}</td>
-      //       <td class="p-3 whitespace-nowrap text-sm text-gray-900 text-center">${retalho.gaveta}</td>
-      //       <td class="p-3 whitespace-nowrap text-sm text-gray-900 text-center">${retalho.material}</td>
-      //       <td class="p-3 whitespace-nowrap text-sm text-gray-900 text-center">${retalho.tipo}</td>
-      //       <td class="p-3 whitespace-nowrap text-sm text-gray-900 text-center">${retalho.espessura}</td>
-      //       <td class="p-3 whitespace-nowrap text-sm text-gray-900 text-center">${retalho.comprimento}</td>
-      //       <td class="p-3 whitespace-nowrap text-sm text-gray-900 text-center">${retalho.largura}</td>
-      //       <td class="p-3 whitespace-nowrap text-sm text-gray-900 text-center">${retalho.quantidade}</td>
-      //       <td class="p-3 text-sm text-gray-500">${retalho.obs || '-'}</td>
-      //       <td class="p-3 whitespace-nowrap text-center text-sm font-medium">
-      //         <button class="text-blue-600 hover:text-blue-900 p-1" title="Editar"><i class="fas fa-edit"></i></button>
-      //         <button class="text-red-600 hover:text-red-900 p-1 ml-2" title="Excluir"><i class="fas fa-trash"></i></button>
-      //       </td>
-      //     `;
-      //     tableBody.appendChild(tr);
-
-      //     // Renderizar card (para mobile)
-      //     const card = document.createElement('div');
-      //     card.className = 'bg-white p-5 rounded-lg shadow-md border border-gray-200';
-      //     card.innerHTML = `
-      //       <h4 class="text-lg font-bold text-gray-900 mb-2">Retalho #${retalho.numero}</h4>
-      //       <p class="text-sm text-gray-700"><span class="font-semibold">Gaveta:</span> ${retalho.gaveta}</p>
-      //       <p class="text-sm text-gray-700"><span class="font-semibold">Material:</span> ${retalho.material}</p>
-      //       <p class="text-sm text-gray-700"><span class="font-semibold">Tipo:</span> ${retalho.tipo}</p>
-      //       <p class="text-sm text-gray-700"><span class="font-semibold">Espessura:</span> ${retalho.espessura}mm</p>
-      //       <p class="text-sm text-gray-700"><span class="font-semibold">Dimensões:</span> ${retalho.comprimento}m x ${retalho.largura}m</p>
-      //       <p class="text-sm text-gray-700"><span class="font-semibold">Quantidade:</span> ${retalho.quantidade}</p>
-      //       <p class="text-sm text-gray-700 mt-2"><span class="font-semibold">Obs:</span> ${retalho.obs || '-'}</p>
-      //       <div class="mt-4 flex justify-end gap-2">
-      //         <button class="text-blue-600 hover:text-blue-900 text-base" title="Editar"><i class="fas fa-edit"></i> Editar</button>
-      //         <button class="text-red-600 hover:text-red-900 text-base ml-2" title="Excluir"><i class="fas fa-trash"></i> Excluir</button>
-      //       </div>
-      //     `;
-      //     cardsContainer.appendChild(card);
-      //   });
-      // }
-
-      // // Exemplo de uso (chame esta função com seus dados reais)
-      // const dummyData = [
-      //   { numero: 1, gaveta: 'A1', material: 'Aço Inox', tipo: 'Chapa', espessura: 2.0, comprimento: 1.5, largura: 0.8, quantidade: 1, obs: 'Pequenas marcas' },
-      //   { numero: 2, gaveta: 'B3', material: 'Alumínio', tipo: 'Barra', espessura: 10.0, comprimento: 2.0, largura: 0.1, quantidade: 3, obs: '' },
-      //   { numero: 3, gaveta: 'C2', material: 'Cobre', tipo: 'Tubo', espessura: 1.5, comprimento: 1.0, largura: 0.05, quantidade: 2, obs: 'Diâmetro 50mm' },
-      // ];
-      // // Chame renderRetalhos(dummyData) quando seus dados forem carregados
-
-      // // Simulação de carregamento
-      // document.getElementById('filter-form').addEventListener('submit', function(e) {
-      //   e.preventDefault();
-      //   document.getElementById('loader').classList.remove('hidden');
-      //   document.getElementById('results-container').classList.add('hidden');
-      //   document.getElementById('empty-state').classList.add('hidden');
-
-      //   setTimeout(() => {
-      //     document.getElementById('loader').classList.add('hidden');
-      //     // renderRetalhos(dummyData); // Use seus dados reais aqui
-      //     renderRetalhos([]); // Exemplo de nenhum resultado
-      //   }, 1500);
-      // });
-    </script>
-  </body>
+    <script type="module" src="js/main.js"></script>
+</body>
 </html>
