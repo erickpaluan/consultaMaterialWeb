@@ -4,6 +4,7 @@ export async function fetchRetalhos(filters, pagination, sort) {
   let query = supabase
     .from("retalhos")
     .select("*", { count: "exact" })
+    .gt('quantidade', 0) // <-- NOVO: Só busca itens com quantidade maior que zero
     .order(sort.column, { ascending: sort.direction });
 
   if (filters.material) query = query.eq("material", filters.material);
@@ -19,6 +20,11 @@ export async function fetchRetalhos(filters, pagination, sort) {
   return await query;
 }
 
+// NOVO: Busca todos os dados de um retalho específico para edição
+export async function fetchFullRetalhoById(id) {
+    return await supabase.from('retalhos').select('*').eq('id', id).single();
+}
+
 export async function fetchDistinctField(field, order = true) {
     return await supabase.from("retalhos").select(field).order(field, { ascending: order });
 }
@@ -26,9 +32,7 @@ export async function fetchDistinctField(field, order = true) {
 export async function fetchDistinctFieldWhere(field, whereClause, order = true) {
     let query = supabase.from("retalhos").select(field);
     for (const key in whereClause) {
-        if(whereClause[key]) {
-            query = query.eq(key, whereClause[key]);
-        }
+        if(whereClause[key]) query = query.eq(key, whereClause[key]);
     }
     return await query.order(field, { ascending: order });
 }
@@ -41,16 +45,21 @@ export async function fetchReservationsByRetalhoId(retalhoId) {
     return await supabase.from("reservas").select("id").eq("retalho_id", retalhoId);
 }
 
-export async function checkForExistingRetalho(retalho) {
-    return await supabase
+export async function checkForExistingRetalho(retalho, excludeId = null) {
+    let query = supabase
       .from("retalhos")
       .select("*")
       .eq("material", retalho.material)
       .eq("tipo", retalho.tipo)
       .eq("espessura", retalho.espessura)
       .eq("comprimento", retalho.comprimento)
-      .eq("largura", retalho.largura)
-      .maybeSingle();
+      .eq("largura", retalho.largura);
+
+    if (excludeId) {
+        query = query.neq('id', excludeId);
+    }
+      
+    return await query.maybeSingle();
 }
 
 export async function createRetalho(novoRetalho) {
@@ -71,9 +80,7 @@ export async function fetchAllReservations(searchTerm = "") {
       .select(`id, numero_os, quantidade_reservada, data_reserva, retalhos(*)`)
       .order("data_reserva", { ascending: false });
 
-    if (searchTerm) {
-        query = query.ilike("numero_os", `%${searchTerm}%`);
-    }
+    if (searchTerm) query = query.ilike("numero_os", `%${searchTerm}%`);
     return await query;
 }
 

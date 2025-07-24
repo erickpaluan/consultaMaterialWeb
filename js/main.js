@@ -10,14 +10,13 @@ export function initializeApp() {
   if (isAppInitialized) return;
   console.log("Inicializando a aplicação principal...");
 
-  // Listeners de Filtros
+  // Filtros
   ui.filterForm.addEventListener('submit', (e) => e.preventDefault());
   ui.materialSelect.addEventListener('change', handlers.handleLoadTiposParaFiltro);
   ui.tipoSelect.addEventListener('change', handlers.handleLoadEspessurasParaFiltro);
   const filterInputs = ui.filterForm.querySelectorAll('select, input');
   filterInputs.forEach(input => {
-    input.addEventListener('change', handlers.handleFilterFormChange);
-    if (input.type === 'number') input.addEventListener('keyup', handlers.handleFilterFormChange);
+    input.addEventListener('input', handlers.handleFilterFormChange);
   });
   ui.clearBtn.addEventListener('click', handlers.handleClearFilters);
 
@@ -30,41 +29,46 @@ export function initializeApp() {
   ui.openRegisterModalBtn.addEventListener('click', handlers.handleOpenRegisterModal);
   ui.showReservedBtn.addEventListener('click', () => handlers.handleFetchReservedItems());
   
-  // Listeners do Modal de CADASTRO (Corrigido e com novas adições)
+  // Ações nos itens (Editar e Reservar)
+  ui.resultsContainer.addEventListener('click', (e) => {
+    if (e.target.closest('.edit-btn')) handlers.handleOpenEditModal(e);
+    if (e.target.closest('.reserve-btn')) handlers.handleReserveClick(e);
+  });
+
+  // Modal de Cadastro/Edição
   ui.closeRegisterModalBtn.addEventListener('click', () => closeModal(ui.registerModal));
-  ui.registerForm.addEventListener('submit', handlers.handleRegisterSubmit);
+  ui.regSubmitBtn.addEventListener('click', handlers.handleRegisterSubmit);
   ui.regMaterialSelect.addEventListener('change', handlers.handleMaterialCadastroChange);
   ui.regTipoSelect.addEventListener('change', handlers.handleTipoCadastroChange);
   ui.regSalvarNovoMaterialBtn.addEventListener('click', handlers.handleSalvarNovoMaterial);
   ui.regSalvarNovoTipoBtn.addEventListener('click', handlers.handleSalvarNovoTipo);
+  ui.regCancelarNovoMaterialBtn.addEventListener('click', () => ui.regNovoMaterialContainer.classList.add('hidden'));
+  ui.regCancelarNovoTipoBtn.addEventListener('click', () => ui.regNovoTipoContainer.classList.add('hidden'));
   ui.regClearBtn.addEventListener('click', handlers.handleClearRegisterForm);
 
-  // Listeners do Modal de RESERVA
-  ui.resultsContainer.addEventListener('click', handlers.handleReserveClick);
+  // Modal de Reserva
   ui.closeReserveModalBtn.addEventListener('click', () => closeModal(ui.reserveModal));
   ui.reserveConfirmBtn.addEventListener('click', handlers.handleConfirmReserve);
   
-  // Listeners do Modal de ITENS RESERVADOS
+  // Modal de Itens Reservados
   ui.closeModalBtn.addEventListener('click', () => closeModal(ui.reservedModal));
   ui.osSearchInput.addEventListener('input', handlers.handleSearchReserved);
   ui.reservedModalContent.addEventListener('click', handlers.handleCancelReserve);
   ui.createPdfBtn.addEventListener('click', handlers.handleGeneratePdf);
 
-  // Lógica para fechar modais ao clicar fora
+  // Fechar modais ao clicar fora
   [ui.registerModal, ui.reserveModal, ui.reservedModal].forEach(modal => {
-    modal.addEventListener('click', (e) => { if (e.target === modal) closeModal(modal); });
+    modal.addEventListener('click', (e) => { if (e.target === modal.firstElementChild.parentElement) closeModal(modal); });
   });
 
   // Atualização automática
   setInterval(handlers.handleLoadFilterOptions, AUTO_REFRESH_INTERVAL);
   window.addEventListener('focus', handlers.handleLoadFilterOptions);
 
-  // Carga de dados inicial da aplicação
+  // Carga inicial
   handlers.handleLoadFilterOptions();
   handlers.handleLoadRetalhos();
-
   isAppInitialized = true;
 }
 
-// Ponto de entrada da aplicação
 document.addEventListener('DOMContentLoaded', initializeAuth);
