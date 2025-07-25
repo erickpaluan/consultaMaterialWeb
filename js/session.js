@@ -1,6 +1,7 @@
 import { supabase } from "./services/supabaseClient.js";
 import { ui } from "./uiElements.js";
 import { initializeApp } from "./main.js";
+import { setState } from "./state.js";
 
 let appInitialized = false;
 
@@ -12,6 +13,7 @@ const getInitials = (name) => {
 };
 
 const updateUserUI = (user, profile) => {
+    setState({ currentUser: { id: user.id, email: user.email, role: profile.role, fullName: profile.full_name } });
     if (!user || !profile) return;
 
     const fullName = profile.full_name || user.email;
@@ -60,8 +62,6 @@ const checkSession = async () => {
 
         if (profileError) {
             console.error("Erro ao buscar perfil do usuário:", profileError);
-            // Mesmo com erro no perfil, o usuário está logado. Podemos mostrar uma UI limitada.
-            // Por enquanto, vamos redirecionar para o login para forçar uma nova tentativa.
             await supabase.auth.signOut(); // Limpa a sessão quebrada
             redirectToLogin();
             return;
@@ -90,7 +90,5 @@ export const initializeAuth = () => {
         }
     });
 
-    // **A MUDANÇA MAIS IMPORTANTE:**
-    // Faz a verificação ativa da sessão assim que o script carrega.
     checkSession();
 };

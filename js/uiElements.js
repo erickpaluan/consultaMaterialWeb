@@ -10,6 +10,9 @@ export const ui = {
   userEmailRole: query("#user-email-role"),
   logoutBtn: query("#logout-btn"),
   adminOnlyContent: queryAll(".admin-only"),
+  historyModal: query("#history-modal"),
+  closeHistoryModalBtn: query("#close-history-modal-btn"),
+  historyModalContent: query("#history-modal-content"),
 
   // Geral
   loader: query("#loader"),

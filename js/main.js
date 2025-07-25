@@ -10,7 +10,7 @@ export function initializeApp() {
   if (isAppInitialized) return;
   console.log("Inicializando a aplicação principal...");
 
-  // Filtros
+  // Listeners de Filtros
   ui.filterForm.addEventListener('submit', (e) => e.preventDefault());
   ui.materialSelect.addEventListener('change', handlers.handleLoadTiposParaFiltro);
   ui.tipoSelect.addEventListener('change', handlers.handleLoadEspessurasParaFiltro);
@@ -29,10 +29,11 @@ export function initializeApp() {
   ui.openRegisterModalBtn.addEventListener('click', handlers.handleOpenRegisterModal);
   ui.showReservedBtn.addEventListener('click', () => handlers.handleFetchReservedItems());
   
-  // Ações nos itens (Editar e Reservar)
+  // Ações nos itens (Editar, Reservar e Histórico)
   ui.resultsContainer.addEventListener('click', (e) => {
     if (e.target.closest('.edit-btn')) handlers.handleOpenEditModal(e);
     if (e.target.closest('.reserve-btn')) handlers.handleReserveClick(e);
+    if (e.target.closest('.history-btn')) handlers.handleOpenHistoryModal(e);
   });
 
   // Modal de Cadastro/Edição
@@ -56,19 +57,28 @@ export function initializeApp() {
   ui.reservedModalContent.addEventListener('click', handlers.handleCancelReserve);
   ui.createPdfBtn.addEventListener('click', handlers.handleGeneratePdf);
 
-  // Fechar modais ao clicar fora
-  [ui.registerModal, ui.reserveModal, ui.reservedModal].forEach(modal => {
-    modal.addEventListener('click', (e) => { if (e.target === modal.firstElementChild.parentElement) closeModal(modal); });
+  // Modal de Histórico
+  ui.closeHistoryModalBtn.addEventListener('click', () => closeModal(ui.historyModal));
+
+  // Lógica para fechar modais ao clicar fora (no fundo escuro)
+  [ui.registerModal, ui.reserveModal, ui.reservedModal, ui.historyModal].forEach(modal => {
+    modal.addEventListener('click', (e) => { 
+        // O e.target precisa ser exatamente o elemento de fundo para fechar
+        if (e.target === modal) {
+            closeModal(modal);
+        }
+    });
   });
 
   // Atualização automática
   setInterval(handlers.handleLoadFilterOptions, AUTO_REFRESH_INTERVAL);
   window.addEventListener('focus', handlers.handleLoadFilterOptions);
 
-  // Carga inicial
+  // Carga de dados inicial da aplicação
   handlers.handleLoadFilterOptions();
   handlers.handleLoadRetalhos();
   isAppInitialized = true;
 }
 
+// Ponto de entrada da aplicação
 document.addEventListener('DOMContentLoaded', initializeAuth);

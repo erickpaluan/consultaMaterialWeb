@@ -1,7 +1,11 @@
 import { ui } from '../uiElements.js';
-import { createRetalhoTableRow, createRetalhoCard, createReservedItemsTable } from './components.js';
+import { createRetalhoTableRow, createRetalhoCard, createReservedItemsTable, createHistoryLog } from './components.js';
+import { getState } from '../state.js'; 
 
 export function renderRetalhos(retalhos) {
+
+    const { currentUser } = getState();
+    const userRole = currentUser?.role;
   ui.resultsTableBody.innerHTML = '';
   ui.resultsCardsContainer.innerHTML = '';
 
@@ -11,10 +15,14 @@ export function renderRetalhos(retalhos) {
   
   if (hasResults) {
     retalhos.forEach(retalho => {
-      ui.resultsTableBody.appendChild(createRetalhoTableRow(retalho));
-      ui.resultsCardsContainer.appendChild(createRetalhoCard(retalho));
+      ui.resultsTableBody.appendChild(createRetalhoTableRow(retalho, userRole));
+      ui.resultsCardsContainer.appendChild(createRetalhoCard(retalho, userRole));
     });
   }
+}
+
+export function renderAuditoria(logs) {
+    ui.historyModalContent.innerHTML = createHistoryLog(logs);
 }
 
 export function populateSelect(selectElement, items, { defaultOption, textKey, valueKey, addOptions = [] }) {

@@ -11,6 +11,7 @@ let currentRetalhoToEdit = null;
 // --- VALIDAÇÃO ---
 function validateRegisterForm() {
     const form = ui.registerForm;
+    // Lista de campos que são obrigatórios
     const requiredFields = [
         form.elements['reg-numero'], form.elements['reg-gaveta'], form.elements['reg-material'],
         form.elements['reg-tipo'], form.elements['reg-espessura'], form.elements['reg-comprimento'],
@@ -19,16 +20,16 @@ function validateRegisterForm() {
     
     let isValid = true;
     for (const field of requiredFields) {
+        // Remove a borda de erro antes de validar
+        field.classList.remove('border-red-500');
         if (!field.value) {
-            field.classList.add('border-red-500');
+            field.classList.add('border-red-500'); // Adiciona borda vermelha se vazio
             isValid = false;
-        } else {
-            field.classList.remove('border-red-500');
         }
     }
     
     if (!isValid) {
-        Swal.fire('Atenção', 'Por favor, preencha todos os campos obrigatórios.', 'warning');
+        Swal.fire('Atenção', 'Por favor, preencha todos os campos obrigatórios (marcados em vermelho).', 'warning');
     }
     return isValid;
 }
@@ -142,7 +143,7 @@ async function setupRegisterModal(mode = 'add', retalhoData = null) {
         ui.regGaveta.value = retalhoData.gaveta;
         ui.regQuantidade.value = retalhoData.quantidade;
         ui.regMaterialSelect.value = retalhoData.material;
-        await handleMaterialCadastroChange(); // Carrega os tipos do material
+        await handleMaterialCadastroChange();
         ui.regTipoSelect.value = retalhoData.tipo;
         ui.regEspessura.value = retalhoData.espessura;
         ui.regComprimento.value = retalhoData.comprimento;
@@ -235,7 +236,6 @@ function handleSalvarNovoTipo() {
 function handleClearRegisterForm() {
     const isEditMode = !!ui.editRetalhoId.value;
     if(isEditMode && currentRetalhoToEdit) {
-        // Se estiver editando, "Limpar" restaura os dados originais
         setupRegisterModal('edit', currentRetalhoToEdit);
     } else {
         dom.resetRegisterForm();
@@ -251,6 +251,8 @@ async function handleRegisterSubmit() {
     const isEditMode = !!form.elements['edit-retalho-id'].value;
     dom.toggleSubmitButton(submitBtn, true, isEditMode ? 'Salvando...' : 'Cadastrando...');
     
+    const { currentUser } = getState();
+    
     let materialValue = form.elements['reg-material'].value;
     if (materialValue === 'novo-material') materialValue = form.elements['reg-novo-material-input'].value.trim();
     let tipoValue = form.elements['reg-tipo'].value;
@@ -263,20 +265,28 @@ async function handleRegisterSubmit() {
       quantidade: parseInt(form.elements['reg-quantidade'].value, 10), obs: form.elements['reg-obs'].value || null,
     };
 
-    let error;
+    let result;
     if (isEditMode) {
         const id = form.elements['edit-retalho-id'].value;
-        const { error: updateError } = await api.updateRetalho(id, retalhoData);
-        error = updateError;
+        result = await api.updateRetalho(id, retalhoData);
+        result.data = { id }; // Adiciona o ID para o log de auditoria
     } else {
-        const { error: insertError } = await api.createRetalho({ ...retalhoData, reservado: false });
-        error = insertError;
+        result = await api.createRetalho({ ...retalhoData, reservado: false });
     }
 
-    if(error) {
-        console.error(`Erro ao ${isEditMode ? 'editar' : 'cadastrar'} retalho:`, error);
+    if(result.error) {
+        console.error(`Erro ao ${isEditMode ? 'editar' : 'cadastrar'} retalho:`, result.error);
         Swal.fire('Erro', `Não foi possível ${isEditMode ? 'salvar as alterações' : 'cadastrar o retalho'}.`, 'error');
     } else {
+        const logData = {
+            retalho_id: result.data.id,
+            user_id: currentUser.id,
+            user_email: currentUser.email,
+            acao: isEditMode ? 'EDICAO' : 'CRIACAO',
+            detalhes: isEditMode ? 'Retalho editado.' : 'Novo retalho cadastrado.'
+        };
+        await api.registrarAuditoria(logData);
+
         Swal.fire('Sucesso!', `Retalho ${isEditMode ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
         closeModal(ui.registerModal);
         handleLoadRetalhos();
@@ -312,6 +322,7 @@ async function handleConfirmReserve() {
     const { id, quantidadeDisponivel } = state.currentRetalhoToReserve;
     const os = ui.reserveInputOs.value.trim();
     const quantidadeReservar = parseInt(ui.reserveInputQuantidade.value, 10) || 1;
+    const { currentUser } = getState();
 
     if (!os) return Swal.fire("Atenção", "Por favor, insira o número da OS.", "warning");
     if (quantidadeReservar <= 0 || quantidadeReservar > quantidadeDisponivel) return Swal.fire("Atenção", `A quantidade deve ser entre 1 e ${quantidadeDisponivel}.`, "warning");
@@ -328,6 +339,11 @@ async function handleConfirmReserve() {
         if (retalhoError) {
             Swal.fire("Erro", "Reserva criada, mas falha ao atualizar o retalho.", "error");
         } else {
+            const logData = {
+                retalho_id: id, user_id: currentUser.id, user_email: currentUser.email,
+                acao: 'RESERVA', detalhes: `Reservado para OS: ${os} | Quantidade: ${quantidadeReservar}`
+            };
+            await api.registrarAuditoria(logData);
             Swal.fire("Sucesso!", "Retalho reservado com sucesso.", "success");
             closeModal(ui.reserveModal);
             handleLoadRetalhos();
@@ -336,7 +352,25 @@ async function handleConfirmReserve() {
     ui.reserveConfirmBtn.disabled = false;
 }
 
-// --- MODAL DE ITENS RESERVADOS E PDF ---
+// --- HISTÓRICO, ITENS RESERVADOS E PDF ---
+async function handleOpenHistoryModal(event) {
+    const button = event.target.closest('.history-btn');
+    if (!button) return;
+
+    const retalhoId = button.dataset.id;
+    openModal(ui.historyModal);
+    ui.historyModalContent.innerHTML = '<p>Carregando histórico...</p>';
+
+    const { data, error } = await api.fetchAuditoriaPorRetalhoId(retalhoId);
+
+    if (error) {
+        console.error("Erro ao buscar histórico:", error);
+        ui.historyModalContent.innerHTML = '<p class="text-red-500">Não foi possível carregar o histórico.</p>';
+        return;
+    }
+    dom.renderAuditoria(data);
+}
+
 const debouncedSearchReserved = debounce((term) => handleFetchReservedItems(term), 400);
 
 function handleSearchReserved(event) {
@@ -361,11 +395,19 @@ async function handleCancelReserve(event) {
     const { reservaId, retalhoId, quantidadeReservada } = button.dataset;
     const { isConfirmed } = await Swal.fire({ title: "Tem certeza?", text: "Esta ação irá cancelar a reserva.", icon: "warning", showCancelButton: true, confirmButtonColor: "#d33", confirmButtonText: "Sim, cancelar!" });
     if (isConfirmed) {
+        const { currentUser } = getState();
         await api.deleteReserva(reservaId);
         const { data: retalho } = await api.fetchRetalhoById(retalhoId);
         const novaQuantidade = (retalho?.quantidade || 0) + parseInt(quantidadeReservada, 10);
         const { data: outrasReservas } = await api.fetchReservationsByRetalhoId(retalhoId);
         await api.updateRetalho(retalhoId, { quantidade: novaQuantidade, reservado: outrasReservas.length > 0 });
+        
+        const logData = {
+            retalho_id: retalhoId, user_id: currentUser.id, user_email: currentUser.email,
+            acao: 'CANCELAMENTO_RESERVA', detalhes: `Quantidade devolvida: ${quantidadeReservada}`
+        };
+        await api.registrarAuditoria(logData);
+        
         Swal.fire("Cancelado!", "A reserva foi cancelada.", "success");
         handleFetchReservedItems(ui.osSearchInput.value);
         handleLoadRetalhos();
@@ -390,5 +432,4 @@ function handleGeneratePdf() {
     }});
 }
 
-
-export { handleLoadRetalhos, handleFilterFormChange, handleClearFilters, handlePageChange, handleSort, handleLoadFilterOptions, handleLoadTiposParaFiltro, handleLoadEspessurasParaFiltro, handleOpenRegisterModal, handleOpenEditModal, handleMaterialCadastroChange, handleTipoCadastroChange, handleSalvarNovoMaterial, handleSalvarNovoTipo, handleClearRegisterForm, handleRegisterSubmit, handleReserveClick, handleConfirmReserve, handleSearchReserved, handleFetchReservedItems, handleCancelReserve, handleGeneratePdf };
+export { handleLoadRetalhos, handleFilterFormChange, handleClearFilters, handlePageChange, handleSort, handleLoadFilterOptions, handleLoadTiposParaFiltro, handleLoadEspessurasParaFiltro, handleOpenRegisterModal, handleOpenEditModal, handleMaterialCadastroChange, handleTipoCadastroChange, handleSalvarNovoMaterial, handleSalvarNovoTipo, handleClearRegisterForm, handleRegisterSubmit, handleReserveClick, handleConfirmReserve, handleOpenHistoryModal, handleSearchReserved, handleFetchReservedItems, handleCancelReserve, handleGeneratePdf };

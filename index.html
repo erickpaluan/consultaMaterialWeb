@@ -113,6 +113,19 @@
             <div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3 border-t"><button id="close-register-modal-btn" type="button" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-300">Fechar</button><button id="reg-clear-btn" type="button" class="bg-gray-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-gray-600">Limpar</button><button id="reg-submit-btn" type="button" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600 flex items-center disabled:opacity-50"><span class="reg-spinner hidden w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></span><span class="reg-btn-text">Cadastrar</span></button></div>
         </div>
     </div>
+
+    <div id="history-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4 z-40 hidden">
+    <div class="relative bg-white rounded-lg shadow-xl w-full max-w-3xl transform transition-all scale-95 opacity-0">
+        <div class="flex justify-between items-center px-6 py-4 border-b">
+            <h3 class="text-lg font-medium leading-6 text-gray-900">Histórico do Retalho</h3>
+            <button id="close-history-modal-btn" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
+        </div>
+        <div class="p-6 max-h-[60vh] overflow-y-auto">
+            <div id="history-modal-content">
+                </div>
+        </div>
+    </div>
+</div>
     
     <div id="reserve-modal" class="fixed inset-0 bg-gray-800 bg-opacity-75 flex items-center justify-center p-4 z-40 hidden"><div class="relative bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all scale-95 opacity-0"><h3 class="px-6 py-4 border-b text-lg font-medium leading-6 text-gray-900">Reservar Retalho</h3><div class="p-6 space-y-4"><div><label for="reserve-input-os" class="block text-sm font-medium text-gray-700">Número da OS</label><input type="text" id="reserve-input-os" class="mt-1 w-full border-gray-300 rounded-md shadow-sm" placeholder="Digite a OS"></div><div id="reserve-quantity-container" class="hidden"><label for="reserve-input-quantidade" class="block text-sm font-medium text-gray-700">Quantidade a Reservar</label><input type="number" id="reserve-input-quantidade" min="1" value="1" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><p id="reserve-available-text" class="text-xs text-gray-500 mt-1"></p></div></div><div class="px-6 py-4 bg-gray-50 flex justify-end space-x-3"><button id="close-reserve-modal-btn" type="button" class="bg-gray-200 text-gray-800 font-semibold py-2 px-4 rounded-md hover:bg-gray-300">Cancelar</button><button id="reserve-confirm-btn" type="button" class="bg-blue-500 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-600">Confirmar Reserva</button></div></div></div>
     

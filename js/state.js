@@ -10,6 +10,7 @@ const appState = {
   currentRetalhoToReserve: { id: null, quantidadeDisponivel: 0 },
   existingMaterials: [],
   existingTypes: [],
+  currentUser: null,
 };
 
 export const getState = () => appState;

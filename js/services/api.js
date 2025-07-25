@@ -1,5 +1,21 @@
 import { supabase } from "./supabaseClient.js";
 
+export async function registrarAuditoria(logData) {
+    // Exemplo de logData: { retalho_id, user_id, user_email, acao, detalhes }
+    const { error } = await supabase.from('auditoria_retalhos').insert(logData);
+    if (error) {
+        console.error("Falha ao registrar auditoria:", error);
+    }
+}
+
+export async function fetchAuditoriaPorRetalhoId(retalhoId) {
+    return await supabase
+        .from('auditoria_retalhos')
+        .select('*')
+        .eq('retalho_id', retalhoId)
+        .order('created_at', { ascending: false });
+}
+
 export async function fetchRetalhos(filters, pagination, sort) {
   let query = supabase
     .from("retalhos")
@@ -63,7 +79,7 @@ export async function checkForExistingRetalho(retalho, excludeId = null) {
 }
 
 export async function createRetalho(novoRetalho) {
-    return await supabase.from("retalhos").insert([novoRetalho]);
+    return await supabase.from("retalhos").insert([novoRetalho]).select().single();
 }
 
 export async function updateRetalho(id, updateData) {
