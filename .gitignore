@@ -1,0 +1,35 @@
+# Node
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+
+# Vercel
+.vercel/
+.vercelignore
+
+# Supabase
+.supabase/.temp/
+supabase/functions/**/.npmrc
+supabase/functions/**/deno.json
+supabase/functions/**/import_map.json
+supabase/.branches/
+
+# Build temporário
+*.log
+dist/
+build/
+tmp/
+temp/
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# VS Code
+.vscode/
+
+# Outros
+.env
+.env.*
