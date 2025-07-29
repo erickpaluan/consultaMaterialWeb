@@ -11,7 +11,6 @@ let currentRetalhoToEdit = null;
 // --- VALIDAÇÃO ---
 function validateRegisterForm() {
     const form = ui.registerForm;
-    // Lista de campos que são obrigatórios
     const requiredFields = [
         form.elements['reg-numero'], form.elements['reg-gaveta'], form.elements['reg-material'],
         form.elements['reg-tipo'], form.elements['reg-espessura'], form.elements['reg-comprimento'],
@@ -20,10 +19,9 @@ function validateRegisterForm() {
     
     let isValid = true;
     for (const field of requiredFields) {
-        // Remove a borda de erro antes de validar
         field.classList.remove('border-red-500');
         if (!field.value) {
-            field.classList.add('border-red-500'); // Adiciona borda vermelha se vazio
+            field.classList.add('border-red-500');
             isValid = false;
         }
     }
@@ -48,6 +46,9 @@ async function handleLoadRetalhos() {
         console.error("Erro ao carregar retalhos:", error);
         Swal.fire("Erro", "Não foi possível carregar os retalhos.", "error");
     } else {
+        // A CORREÇÃO ESTÁ AQUI:
+        setState({ totalItems: count }); // <-- A LINHA QUE FALTAVA
+        
         dom.renderRetalhos(data || []);
         dom.updatePagination(state.currentPage, count, ITEMS_PER_PAGE);
     }
@@ -269,7 +270,7 @@ async function handleRegisterSubmit() {
     if (isEditMode) {
         const id = form.elements['edit-retalho-id'].value;
         result = await api.updateRetalho(id, retalhoData);
-        result.data = { id }; // Adiciona o ID para o log de auditoria
+        result.data = { id };
     } else {
         result = await api.createRetalho({ ...retalhoData, reservado: false });
     }
