@@ -1,8 +1,6 @@
-// supabase/functions/create-user/index.ts
-
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts'
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.0.0'
-import { corsHeaders } from '../_shared/cors.ts' // Esta linha agora vai funcionar
+import { corsHeaders } from '../_shared/cors.ts'
 
 serve(async (req) => {
   // Tratamento para requisição OPTIONS (necessário para CORS)

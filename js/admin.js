@@ -9,9 +9,29 @@ const userListTable = userListContainer.querySelector('table');
 const userListBody = document.getElementById('user-list-body');
 let currentUser = null;
 
-// --- FUNÇÕES DE RENDERIZAÇÃO ---
+// --- FUNÇÃO AUXILIAR PARA CHAMAR EDGE FUNCTIONS COM AUTENTICAÇÃO ---
+// Esta é a principal mudança. Centralizamos a lógica de chamada aqui.
+async function invokeAdminFunction(functionName, body = {}) {
+    const { data: { session } } = await supabase.auth.getSession();
+
+    if (!session) {
+        Swal.fire('Erro de Autenticação', 'Sua sessão expirou. Por favor, faça login novamente.', 'error')
+            .then(() => window.location.href = 'login.html');
+        throw new Error("Sessão não encontrada.");
+    }
+
+    return await supabase.functions.invoke(functionName, {
+        body,
+        headers: {
+            'Authorization': `Bearer ${session.access_token}`,
+        },
+    });
+}
+
+
+// --- FUNÇÕES DE RENDERIZAÇÃO (INTERFACE) ---
 function renderUsers(users) {
-    userListBody.innerHTML = ''; // Limpa a lista antiga
+    userListBody.innerHTML = '';
     if (users && users.length > 0) {
         users.forEach(user => {
             const isCurrentUser = user.id === currentUser.id;
@@ -37,24 +57,26 @@ function renderUsers(users) {
     userListLoader.classList.add('hidden');
 }
 
-// --- LÓGICA DE DADOS (CHAMADAS ÀS EDGE FUNCTIONS) ---
+// --- LÓGICA DE DADOS (AGORA USANDO A FUNÇÃO AUXILIAR) ---
 async function loadUsers() {
     userListLoader.classList.remove('hidden');
     userListTable.classList.add('hidden');
-    const { data, error } = await supabase.functions.invoke('list-users');
-    if (error) {
+    userListLoader.textContent = 'Carregando usuários...';
+    
+    try {
+        const { data, error } = await invokeAdminFunction('list-users');
+        if (error) throw error;
+        renderUsers(data);
+    } catch (error) {
         Swal.fire('Erro', 'Não foi possível carregar a lista de usuários.', 'error');
         userListLoader.textContent = 'Erro ao carregar usuários.';
         console.error('Erro ao carregar usuários:', error);
-    } else {
-        renderUsers(data);
     }
 }
 
 async function handleCreateUser(e) {
     e.preventDefault();
     const btn = document.getElementById('create-user-btn');
-    
     const userData = {
         fullName: document.getElementById('new-user-name').value,
         email: document.getElementById('new-user-email').value,
@@ -62,26 +84,22 @@ async function handleCreateUser(e) {
         role: document.getElementById('new-user-role').value,
     };
 
-    // Validação simples
     if (!userData.email || !userData.password || !userData.fullName) {
-        Swal.fire('Atenção', 'Por favor, preencha todos os campos.', 'warning');
-        return;
+        return Swal.fire('Atenção', 'Por favor, preencha todos os campos.', 'warning');
     }
 
     btn.disabled = true;
     btn.textContent = 'Criando...';
 
-    // Chama a Edge Function 'create-user'
-    const { data, error } = await supabase.functions.invoke('create-user', {
-        body: userData,
-    });
-
-    if (error) {
-        Swal.fire('Erro', `Não foi possível criar o usuário: ${error.message}`, 'error');
-    } else {
+    try {
+        const { data, error } = await invokeAdminFunction('create-user', userData);
+        if (error) throw error;
         Swal.fire('Sucesso!', data.message, 'success');
-        createUserForm.reset(); // Limpa o formulário
-        // Futuramente, aqui você chamaria uma função para recarregar a lista de usuários
+        createUserForm.reset();
+        loadUsers();
+    } catch (error) {
+        Swal.fire('Erro', `Não foi possível criar o usuário: ${error.message}`, 'error');
+        console.error('Erro ao criar usuário:', error);
     }
 
     btn.disabled = false;
@@ -95,23 +113,21 @@ async function handleEditRole(e) {
     const currentRole = btn.dataset.currentRole;
     
     const { value: newRole } = await Swal.fire({
-        title: 'Alterar Cargo do Usuário',
-        input: 'select',
+        title: 'Alterar Cargo do Usuário', input: 'select',
         inputOptions: { 'user': 'Usuário', 'admin': 'Administrador' },
-        inputValue: currentRole,
-        showCancelButton: true,
-        confirmButtonText: 'Salvar',
-        cancelButtonText: 'Cancelar'
+        inputValue: currentRole, showCancelButton: true,
+        confirmButtonText: 'Salvar', cancelButtonText: 'Cancelar'
     });
 
     if (newRole && newRole !== currentRole) {
-        const { error } = await supabase.functions.invoke('update-user', { body: { userId, role: newRole } });
-        if (error) {
+        try {
+            const { error } = await invokeAdminFunction('update-user', { userId, role: newRole });
+            if (error) throw error;
+            Swal.fire('Sucesso!', 'Cargo atualizado com sucesso!', 'success');
+            loadUsers();
+        } catch(error) {
             Swal.fire('Erro', 'Não foi possível alterar o cargo do usuário.', 'error');
             console.error('Erro ao atualizar cargo:', error);
-        } else {
-            Swal.fire('Sucesso!', 'Cargo atualizado com sucesso!', 'success');
-            loadUsers(); // Recarrega a lista
         }
     }
 }
@@ -127,19 +143,19 @@ async function handleToggleStatus(e) {
     const { isConfirmed } = await Swal.fire({
         title: `Tem certeza que deseja ${actionText} este usuário?`,
         text: newStatus === 'blocked' ? 'O usuário não poderá mais fazer login.' : 'O usuário poderá fazer login novamente.',
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonText: `Sim, ${actionText}`,
-        cancelButtonText: 'Cancelar'
+        icon: 'warning', showCancelButton: true,
+        confirmButtonText: `Sim, ${actionText}`, cancelButtonText: 'Cancelar'
     });
 
     if (isConfirmed) {
-        const { error } = await supabase.functions.invoke('update-user', { body: { userId, status: newStatus } });
-        if (error) {
-            Swal.fire('Erro', `Não foi possível ${actionText} o usuário.`, 'error');
-        } else {
+        try {
+            const { error } = await invokeAdminFunction('update-user', { userId, status: newStatus });
+            if (error) throw error;
             Swal.fire('Sucesso!', `Usuário foi ${actionText} com sucesso!`, 'success');
-            loadUsers(); // Recarrega a lista
+            loadUsers();
+        } catch (error) {
+            Swal.fire('Erro', `Não foi possível ${actionText} o usuário.`, 'error');
+            console.error(`Erro ao ${actionText} usuário:`, error);
         }
     }
 }
@@ -151,7 +167,7 @@ async function checkAdminAccess() {
         window.location.href = 'login.html';
         return;
     }
-    currentUser = user; // Guarda o usuário atual para verificações
+    currentUser = user;
 
     const { data: profile, error } = await supabase.from('profiles').select('role').eq('id', user.id).single();
     if (error || profile.role !== 'admin') {
@@ -160,13 +176,15 @@ async function checkAdminAccess() {
         }).then(() => { window.location.href = 'index.html'; });
     } else {
         adminContainer.classList.remove('hidden');
-        loadUsers(); // Carrega a lista de usuários se for admin
+        loadUsers();
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     checkAdminAccess();
     createUserForm.addEventListener('submit', handleCreateUser);
-    userListBody.addEventListener('click', handleEditRole);
-    userListBody.addEventListener('click', handleToggleStatus);
+    userListBody.addEventListener('click', (e) => {
+        handleEditRole(e);
+        handleToggleStatus(e);
+    });
 });
