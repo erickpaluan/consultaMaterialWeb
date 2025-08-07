@@ -1,6 +1,6 @@
 import * as api from './services/api.js';
 import * as dom from './ui/dom.js';
-import { ui } from './uiElements.js';
+import { SELECTORS } from './selectors.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { getState, setState, updateFilters, resetFilters, setSort } from './state.js';
 import { ITEMS_PER_PAGE } from './config.js';
@@ -8,7 +8,50 @@ import { debounce } from './utils.js';
 
 let currentRetalhoToEdit = null;
 
-// --- VALIDAÇÃO ---
+function parseSearchQuery(query) {
+    const normalizedQuery = query.toLowerCase().replace(/,/g, '.');
+    const terms = normalizedQuery.split(/\s+/).filter(Boolean);
+    const filters = {};
+
+    const dimensionRegex = /(\d*\.?\d+)\s*x\s*(\d*\.?\d+)/;
+    const dimensionMatch = normalizedQuery.match(dimensionRegex);
+    if (dimensionMatch) {
+        const measure1 = parseFloat(dimensionMatch[1]);
+        const measure2 = parseFloat(dimensionMatch[2]);
+        filters.comprimento = Math.max(measure1, measure2);
+        filters.largura = Math.min(measure1, measure2);
+    }
+    
+    const thicknessRegex = /(\d*\.?\d+)mm/;
+    const thicknessMatch = normalizedQuery.match(thicknessRegex);
+    if (thicknessMatch) {
+        filters.espessura = parseFloat(thicknessMatch[1]);
+    }
+    
+    const textTerms = terms.filter(term => !term.match(dimensionRegex) && !term.match(thicknessRegex));
+    if(textTerms.length > 0) {
+        filters.textSearch = textTerms;
+    }
+
+    return filters;
+}
+
+function handleSmartSearch() {
+    const query = document.querySelector(SELECTORS.smartSearchInput).value;
+    const parsedFilters = parseSearchQuery(query);
+    ui.filterForm.reset();
+
+    if (parsedFilters.largura) ui.larguraInput.value = parsedFilters.largura;
+    if (parsedFilters.comprimento) ui.alturaInput.value = parsedFilters.comprimento;
+    
+    setState({ filters: parsedFilters });
+    
+    handleLoadRetalhos();
+    dom.toggleClearButtonVisibility();
+}
+
+export const debouncedSmartSearch = debounce(handleSmartSearch, 500);
+
 function validateRegisterForm() {
     const form = ui.registerForm;
     const requiredFields = [
@@ -32,10 +75,6 @@ function validateRegisterForm() {
     return isValid;
 }
 
-
-// --- FILTROS E CONSULTA PRINCIPAL ---
-const debouncedLoadRetalhos = debounce(() => handleLoadRetalhos(), 400);
-
 async function handleLoadRetalhos() {
     dom.toggleLoader(true);
     const state = getState();
@@ -46,9 +85,7 @@ async function handleLoadRetalhos() {
         console.error("Erro ao carregar retalhos:", error);
         Swal.fire("Erro", "Não foi possível carregar os retalhos.", "error");
     } else {
-        // A CORREÇÃO ESTÁ AQUI:
-        setState({ totalItems: count }); // <-- A LINHA QUE FALTAVA
-        
+        setState({ totalItems: count });
         dom.renderRetalhos(data || []);
         dom.updatePagination(state.currentPage, count, ITEMS_PER_PAGE);
     }
@@ -56,9 +93,10 @@ async function handleLoadRetalhos() {
 }
 
 function handleFilterFormChange() {
+    ui.smartSearchInput.value = '';
     updateFilters();
     dom.toggleClearButtonVisibility();
-    debouncedLoadRetalhos();
+    handleLoadRetalhos();
 }
 
 function handleClearFilters() {
@@ -123,8 +161,6 @@ async function handleLoadEspessurasParaFiltro() {
     }
 }
 
-
-// --- CADASTRO E EDIÇÃO DE RETALHOS ---
 async function setupRegisterModal(mode = 'add', retalhoData = null) {
     dom.resetRegisterForm();
     currentRetalhoToEdit = retalhoData;
@@ -137,24 +173,24 @@ async function setupRegisterModal(mode = 'add', retalhoData = null) {
     const { data } = await api.fetchDistinctField('material');
     const materialNames = data ? [...new Set(data.map(m => m.material))].filter(Boolean) : [];
     setState({ existingMaterials: materialNames.map(m => m.toLowerCase()) });
-    dom.populateSelect(ui.regMaterialSelect, materialNames, { defaultOption: 'Selecione...', addOptions: [`<option value="novo-material">-- Novo Material --</option>`] });
+    dom.populateSelect(ui.registerForm.elements['reg-material'], materialNames, { defaultOption: 'Selecione...', addOptions: [`<option value="novo-material">-- Novo Material --</option>`] });
 
     if (isEditMode) {
-        ui.regNumero.value = retalhoData.numero;
-        ui.regGaveta.value = retalhoData.gaveta;
-        ui.regQuantidade.value = retalhoData.quantidade;
-        ui.regMaterialSelect.value = retalhoData.material;
+        ui.registerForm.elements['reg-numero'].value = retalhoData.numero;
+        ui.registerForm.elements['reg-gaveta'].value = retalhoData.gaveta;
+        ui.registerForm.elements['reg-quantidade'].value = retalhoData.quantidade;
+        ui.registerForm.elements['reg-material'].value = retalhoData.material;
         await handleMaterialCadastroChange();
-        ui.regTipoSelect.value = retalhoData.tipo;
-        ui.regEspessura.value = retalhoData.espessura;
-        ui.regComprimento.value = retalhoData.comprimento;
-        ui.regLargura.value = retalhoData.largura;
-        ui.regObs.value = retalhoData.obs || '';
+        ui.registerForm.elements['reg-tipo'].value = retalhoData.tipo;
+        ui.registerForm.elements['reg-espessura'].value = retalhoData.espessura;
+        ui.registerForm.elements['reg-comprimento'].value = retalhoData.comprimento;
+        ui.registerForm.elements['reg-largura'].value = retalhoData.largura;
+        ui.registerForm.elements['reg-obs'].value = retalhoData.obs || '';
     } else {
-        dom.populateSelect(ui.regTipoSelect, [], { defaultOption: 'Selecione um material...', addOptions: [`<option value="novo-tipo">-- Novo Tipo --</option>`] });
+        dom.populateSelect(ui.registerForm.elements['reg-tipo'], [], { defaultOption: 'Selecione um material...', addOptions: [`<option value="novo-tipo">-- Novo Tipo --</option>`] });
     }
 
-    openModal(ui.registerModal);
+    openModal(document.querySelector(SELECTORS.registerModal));
 }
 
 async function handleOpenRegisterModal() {
@@ -173,26 +209,26 @@ async function handleOpenEditModal(event) {
 }
 
 async function handleMaterialCadastroChange() {
-    const selectedMaterial = ui.regMaterialSelect.value;
+    const selectedMaterial = ui.registerForm.elements['reg-material'].value;
     ui.regNovoMaterialContainer.classList.add('hidden');
     ui.regNovoTipoContainer.classList.add('hidden');
 
     if (selectedMaterial === 'novo-material') {
         ui.regNovoMaterialContainer.classList.remove('hidden');
         ui.regNovoMaterialInput.focus();
-        dom.populateSelect(ui.regTipoSelect, [], { defaultOption: 'Salve o novo material' });
+        dom.populateSelect(ui.registerForm.elements['reg-tipo'], [], { defaultOption: 'Salve o novo material' });
     } else if (selectedMaterial) {
         const { data } = await api.fetchDistinctFieldWhere('tipo', { material: selectedMaterial });
         const tipoNames = data ? [...new Set(data.map(t => t.tipo))].filter(Boolean) : [];
         setState({ existingTypes: tipoNames.map(t => t.toLowerCase()) });
-        dom.populateSelect(ui.regTipoSelect, tipoNames, { defaultOption: 'Selecione...', addOptions: [`<option value="novo-tipo">-- Novo Tipo --</option>`] });
+        dom.populateSelect(ui.registerForm.elements['reg-tipo'], tipoNames, { defaultOption: 'Selecione...', addOptions: [`<option value="novo-tipo">-- Novo Tipo --</option>`] });
     } else {
-        dom.populateSelect(ui.regTipoSelect, [], { defaultOption: 'Selecione um material...' });
+        dom.populateSelect(ui.registerForm.elements['reg-tipo'], [], { defaultOption: 'Selecione um material...' });
     }
 }
 
 function handleTipoCadastroChange() {
-    if (ui.regTipoSelect.value === 'novo-tipo') {
+    if (ui.registerForm.elements['reg-tipo'].value === 'novo-tipo') {
         ui.regNovoTipoContainer.classList.remove('hidden');
         ui.regNovoTipoInput.focus();
     } else {
@@ -215,7 +251,7 @@ function handleSalvarNovoMaterial() {
     const { existingMaterials } = getState();
     if (existingMaterials.includes(novoMaterial.toLowerCase())) return Swal.fire("Atenção", "Este material já existe.", "warning");
     
-    addAndSelectOption(ui.regMaterialSelect, novoMaterial);
+    addAndSelectOption(ui.registerForm.elements['reg-material'], novoMaterial);
     existingMaterials.push(novoMaterial.toLowerCase());
     ui.regNovoMaterialContainer.classList.add('hidden');
     ui.regNovoMaterialInput.value = '';
@@ -228,7 +264,7 @@ function handleSalvarNovoTipo() {
     const { existingTypes } = getState();
     if (existingTypes.includes(novoTipo.toLowerCase())) return Swal.fire("Atenção", "Este tipo já existe para este material.", "warning");
     
-    addAndSelectOption(ui.regTipoSelect, novoTipo);
+    addAndSelectOption(ui.registerForm.elements['reg-tipo'], novoTipo);
     existingTypes.push(novoTipo.toLowerCase());
     ui.regNovoTipoContainer.classList.add('hidden');
     ui.regNovoTipoInput.value = '';
@@ -296,7 +332,6 @@ async function handleRegisterSubmit() {
     dom.toggleSubmitButton(submitBtn, false, isEditMode ? 'Salvar Alterações' : 'Cadastrar');
 }
 
-// --- RESERVAS ---
 function handleReserveClick(event) {
     const button = event.target.closest('.reserve-btn');
     if (!button) return;
@@ -353,7 +388,6 @@ async function handleConfirmReserve() {
     ui.reserveConfirmBtn.disabled = false;
 }
 
-// --- HISTÓRICO, ITENS RESERVADOS E PDF ---
 async function handleOpenHistoryModal(event) {
     const button = event.target.closest('.history-btn');
     if (!button) return;
@@ -416,9 +450,9 @@ async function handleCancelReserve(event) {
 }
 
 function handleGeneratePdf() {
-    const content = ui.reservedModalContent;
-    const actionsHeader = content.querySelector('th:last-child');
-    const actionsCells = content.querySelectorAll('td:last-child');
+    const content = get(SELECTORS.reservedModalContent);
+    const actionsHeader = content.querySelector('.actions-cell-pdf');
+    const actionsCells = content.querySelectorAll('.actions-cell-pdf');
 
     if(actionsHeader) actionsHeader.classList.add('pdf-hidden');
     actionsCells.forEach(cell => cell.classList.add('pdf-hidden'));

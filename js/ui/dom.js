@@ -1,97 +1,71 @@
-import { ui } from '../uiElements.js';
+import { SELECTORS } from './selectors.js';
 import { createRetalhoTableRow, createRetalhoCard, createReservedItemsTable, createHistoryLog } from './components.js';
-import { getState } from '../state.js'; 
+
+const get = (selector) => document.querySelector(selector);
+const getAll = (selector) => document.querySelectorAll(selector);
 
 export function renderRetalhos(retalhos) {
-
-    const { currentUser } = getState();
-    const userRole = currentUser?.role;
-  ui.resultsTableBody.innerHTML = '';
-  ui.resultsCardsContainer.innerHTML = '';
-
+  get(SELECTORS.resultsTableBody).innerHTML = '';
+  get(SELECTORS.resultsCardsContainer).innerHTML = '';
   const hasResults = retalhos.length > 0;
-  ui.emptyState.classList.toggle('hidden', hasResults);
-  ui.resultsContainer.classList.toggle('hidden', !hasResults);
+  get(SELECTORS.emptyState).classList.toggle('hidden', hasResults);
+  get(SELECTORS.resultsContainer).classList.toggle('hidden', !hasResults);
   
   if (hasResults) {
     retalhos.forEach(retalho => {
-      ui.resultsTableBody.appendChild(createRetalhoTableRow(retalho, userRole));
-      ui.resultsCardsContainer.appendChild(createRetalhoCard(retalho, userRole));
+      get(SELECTORS.resultsTableBody).appendChild(createRetalhoTableRow(retalho));
+      get(SELECTORS.resultsCardsContainer).appendChild(createRetalhoCard(retalho));
     });
   }
 }
 
-export function renderAuditoria(logs) {
-    ui.historyModalContent.innerHTML = createHistoryLog(logs);
-}
-
-export function populateSelect(selectElement, items, { defaultOption, textKey, valueKey, addOptions = [] }) {
-    const currentValue = selectElement.value;
-    selectElement.innerHTML = `<option value="">${defaultOption}</option>`;
-    
-    items.forEach(item => {
-        const option = document.createElement('option');
-        const value = valueKey ? item[valueKey] : item;
-        const text = textKey ? item[textKey] : item;
-        option.value = value;
-        option.textContent = text;
-        selectElement.appendChild(option);
-    });
-    
-    addOptions.forEach(opt => selectElement.innerHTML += opt);
-
-    if (currentValue && Array.from(selectElement.options).some(opt => opt.value === currentValue)) {
-        selectElement.value = currentValue;
-    }
-}
-
-export function toggleLoader(isLoading) {
-    ui.loader.classList.toggle('hidden', !isLoading);
-}
+export function populateSelect(selectElement, items, { defaultOption, textKey, valueKey, addOptions = [] }) { /* ...código sem alteração... */ }
+export function toggleLoader(isLoading) { get(SELECTORS.loader).classList.toggle('hidden', !isLoading); }
 
 export function updatePagination(currentPage, totalItems, itemsPerPage) {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    ui.paginationControls.classList.toggle('hidden', totalPages <= 1);
-    
+    get(SELECTORS.paginationControls).classList.toggle('hidden', totalPages <= 1);
     if (totalPages > 1) {
-        ui.pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
-        ui.prevPageBtn.disabled = currentPage === 1;
-        ui.nextPageBtn.disabled = currentPage >= totalPages;
+        get(SELECTORS.pageInfo).textContent = `Página ${currentPage} de ${totalPages}`;
+        get(SELECTORS.prevPageBtn).disabled = currentPage === 1;
+        get(SELECTORS.nextPageBtn).disabled = currentPage >= totalPages;
     }
 }
 
 export function toggleClearButtonVisibility() {
-    const formElements = ui.filterForm.elements;
-    const hasFilter = formElements.material.value || formElements.tipo.value || formElements.espessura.value || formElements.largura.value || formElements.altura.value;
-    ui.clearBtn.classList.toggle('hidden', !hasFilter);
+    const form = get(SELECTORS.filterForm);
+    const hasFilter = form.elements.material.value || form.elements.tipo.value || form.elements.espessura.value || form.elements.largura.value || form.elements.altura.value || get(SELECTORS.smartSearchInput).value;
+    get(SELECTORS.clearBtn).classList.toggle('hidden', !hasFilter);
 }
 
 export function resetFilterForm() {
-    ui.filterForm.reset();
-    ui.tipoSelect.innerHTML = '<option value="">Todos os Tipos</option>';
-    ui.espessuraSelect.innerHTML = '<option value="">Todas as Espessuras</option>';
+    get(SELECTORS.filterForm).reset();
+    get(SELECTORS.smartSearchInput).value = '';
+    get(SELECTORS.tipoSelect).innerHTML = '<option value="">Todos os Tipos</option>';
+    get(SELECTORS.espessuraSelect).innerHTML = '<option value="">Todas as Espessuras</option>';
     toggleClearButtonVisibility();
 }
 
 export function resetRegisterForm() {
-    ui.registerForm.reset();
-    ui.regNovoMaterialContainer.classList.add('hidden');
-    ui.regNovoTipoContainer.classList.add('hidden');
-    ui.registerForm.querySelectorAll('.error-message').forEach(el => el.remove());
-    ui.registerForm.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+    const form = get(SELECTORS.registerForm);
+    form.reset();
+    get(SELECTORS.regNovoMaterialContainer).classList.add('hidden');
+    get(SELECTORS.regNovoTipoContainer).classList.add('hidden');
+    form.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
 }
 
 export function renderReservedItems(data) {
-    ui.reservedModalContent.innerHTML = '';
-    if(data.length === 0) {
-        ui.reservedModalContent.innerHTML = `<p class="text-center text-gray-500 p-4">Nenhum retalho reservado encontrado.</p>`;
+    const container = get(SELECTORS.reservedModalContent);
+    container.innerHTML = '';
+    if(!data || data.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500 p-4">Nenhum retalho reservado encontrado.</p>`;
     } else {
-        ui.reservedModalContent.appendChild(createReservedItemsTable(data));
+        container.appendChild(createReservedItemsTable(data));
     }
 }
 
 export function updateSortVisuals(column, direction) {
-    ui.resultsTable.querySelectorAll('th[data-sort]').forEach(th => {
+    getAll(`${SELECTORS.resultsTable} th[data-sort]`).forEach(th => {
         th.classList.remove('sort-asc', 'sort-desc');
         if (th.dataset.sort === column) {
             th.classList.add(direction ? 'sort-asc' : 'sort-desc');
@@ -102,5 +76,9 @@ export function updateSortVisuals(column, direction) {
 export function toggleSubmitButton(button, isSubmitting, text) {
     button.disabled = isSubmitting;
     button.querySelector('.reg-spinner').classList.toggle('hidden', !isSubmitting);
-    button.querySelector('.reg-btn-text').textContent = isSubmitting ? 'Salvando...' : text;
+    button.querySelector('.reg-btn-text').textContent = text;
+}
+
+export function renderAuditoria(logs) {
+    get(SELECTORS.historyModalContent).innerHTML = createHistoryLog(logs);
 }

@@ -1,5 +1,5 @@
 import { supabase } from "./services/supabaseClient.js";
-import { ui } from "./uiElements.js";
+import { SELECTORS } from "./selectors.js";
 import { initializeApp } from "./main.js";
 import { setState } from "./state.js";
 
@@ -13,23 +13,23 @@ const getInitials = (name) => {
 };
 
 const updateUserUI = (user, profile) => {
-    setState({ currentUser: { id: user.id, email: user.email, role: profile.role, fullName: profile.full_name } });
     if (!user || !profile) return;
+    setState({ currentUser: { id: user.id, email: user.email, role: profile.role, fullName: profile.full_name } });
 
     const fullName = profile.full_name || user.email;
     const role = profile.role === 'admin' ? 'Administrador' : 'Usuário';
 
-    ui.userInitialsBtn.textContent = getInitials(fullName);
-    ui.userFullname.textContent = fullName;
-    ui.userEmailRole.textContent = `${user.email} (${role})`;
+    document.querySelector(SELECTORS.userInitialsBtn).textContent = getInitials(fullName);
+    document.querySelector(SELECTORS.userFullname).textContent = fullName;
+    document.querySelector(SELECTORS.userEmailRole).textContent = `${user.email} (${role})`;
 
     const isAdmin = profile.role === "admin";
-    ui.adminOnlyContent.forEach(el => el.classList.toggle("hidden", !isAdmin));
+    document.querySelectorAll(SELECTORS.adminOnlyContent).forEach(el => el.classList.toggle("hidden", !isAdmin));
 };
 
 const showApp = () => {
-    ui.authenticatedContent.classList.remove("hidden");
-    ui.unauthenticatedContent.classList.add("hidden");
+    document.querySelector(SELECTORS.authenticatedContent).classList.remove("hidden");
+    document.querySelector(SELECTORS.unauthenticatedContent).classList.add("hidden");
     if (!appInitialized) {
         initializeApp();
         appInitialized = true;
@@ -45,28 +45,21 @@ const redirectToLogin = () => {
 
 const checkSession = async () => {
     const { data: { session }, error: sessionError } = await supabase.auth.getSession();
-    
     if (sessionError) {
         console.error("Erro ao obter a sessão:", sessionError);
         redirectToLogin();
         return;
     }
-
     if (session) {
         const user = session.user;
         const { data: profile, error: profileError } = await supabase
-            .from("profiles")
-            .select("role, full_name")
-            .eq("id", user.id)
-            .single();
-
+            .from("profiles").select("role, full_name").eq("id", user.id).single();
         if (profileError) {
             console.error("Erro ao buscar perfil do usuário:", profileError);
-            await supabase.auth.signOut(); // Limpa a sessão quebrada
+            await supabase.auth.signOut();
             redirectToLogin();
             return;
         }
-
         updateUserUI(user, profile);
         showApp();
     } else {
@@ -74,21 +67,15 @@ const checkSession = async () => {
     }
 };
 
-
 export const initializeAuth = () => {
-    // Adiciona o listener para o botão de logout
-    ui.logoutBtn.addEventListener("click", async () => {
+    document.querySelector(SELECTORS.logoutBtn)?.addEventListener("click", async () => {
         await supabase.auth.signOut();
-        // O listener onAuthStateChange abaixo cuidará do redirecionamento
     });
-    
-    // Ouve por mudanças futuras (como logout)
     supabase.auth.onAuthStateChange((_event, session) => {
         if (!session) {
             appInitialized = false;
             redirectToLogin();
         }
     });
-
     checkSession();
 };
