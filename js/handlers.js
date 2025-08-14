@@ -86,7 +86,7 @@ async function handleLoadRetalhos() {
 
 function handleFilterFormChange() {
     get(SELECTORS.smartSearchInput).value = '';
-    updateFilters(get(SELECTORS.filterForm)); // Passa o formulário para a função
+    updateFilters(get(SELECTORS.filterForm));
     dom.toggleClearButtonVisibility();
     handleLoadRetalhos();
 }
@@ -267,21 +267,76 @@ function handleClearRegisterForm() {
 
 async function handleRegisterSubmit() {
     if (!validateRegisterForm()) return;
+
     const form = get(SELECTORS.registerForm);
     const submitBtn = get(SELECTORS.regSubmitBtn);
     const isEditMode = !!form.elements['edit-retalho-id'].value;
-    dom.toggleSubmitButton(submitBtn, true, isEditMode ? 'Salvando...' : 'Cadastrando...');
     const { currentUser } = getState();
+    
+    // Coleta os dados do formulário e padroniza para minúsculas
     let materialValue = form.elements['reg-material'].value;
-    if (materialValue === 'novo-material') materialValue = form.elements['reg-novo-material-input'].value.trim();
+    if (materialValue === 'novo-material') materialValue = get(SELECTORS.regNovoMaterialInput).value.trim();
     let tipoValue = form.elements['reg-tipo'].value;
-    if (tipoValue === 'novo-tipo') tipoValue = form.elements['reg-novo-tipo-input'].value.trim();
+    if (tipoValue === 'novo-tipo') tipoValue = get(SELECTORS.regNovoTipoInput).value.trim();
+
     const retalhoData = {
-      numero: parseFloat(form.elements['reg-numero'].value), gaveta: form.elements['reg-gaveta'].value,
-      material: materialValue, tipo: tipoValue, espessura: parseFloat(form.elements['reg-espessura'].value),
-      comprimento: parseFloat(form.elements['reg-comprimento'].value), largura: parseFloat(form.elements['reg-largura'].value),
-      quantidade: parseInt(form.elements['reg-quantidade'].value, 10), obs: form.elements['reg-obs'].value || null,
+      numero: parseFloat(form.elements['reg-numero'].value),
+      gaveta: form.elements['reg-gaveta'].value,
+      material: materialValue.toLowerCase().trim(),
+      tipo: tipoValue.toLowerCase().trim(),
+      espessura: parseFloat(form.elements['reg-espessura'].value),
+      comprimento: parseFloat(form.elements['reg-comprimento'].value),
+      largura: parseFloat(form.elements['reg-largura'].value),
+      quantidade: parseInt(form.elements['reg-quantidade'].value, 10),
+      obs: form.elements['reg-obs'].value || null,
     };
+
+    dom.toggleSubmitButton(submitBtn, true, isEditMode ? 'Salvando...' : 'Verificando...');
+
+    // --- NOVO FLUXO DE VERIFICAÇÃO DE DUPLICATAS ---
+    if (!isEditMode) {
+        const existingRetalho = await api.checkForExistingRetalho(retalhoData);
+
+        if (existingRetalho) {
+            dom.toggleSubmitButton(submitBtn, false, 'Cadastrar');
+            
+            const { isConfirmed } = await Swal.fire({
+                title: 'Retalho Duplicado Encontrado!',
+                html: `Já existe um retalho (Nº: <strong>${existingRetalho.numero}</strong>) com estas mesmas características.<br><br>Deseja somar a quantidade <strong>(${retalhoData.quantidade})</strong> ao estoque existente?`,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Sim, somar ao estoque!',
+                cancelButtonText: 'Não, cancelar'
+            });
+
+            if (isConfirmed) {
+                dom.toggleSubmitButton(submitBtn, true, 'Atualizando...');
+                const newQuantity = existingRetalho.quantidade + retalhoData.quantidade;
+                const { error: updateError } = await api.updateRetalho(existingRetalho.id, { quantidade: newQuantity });
+
+                if (updateError) {
+                    Swal.fire('Erro!', 'Não foi possível atualizar a quantidade.', 'error');
+                } else {
+                    await api.registrarAuditoria({
+                        retalho_id: existingRetalho.id,
+                        user_id: currentUser.id,
+                        user_email: currentUser.email,
+                        acao: 'SOMA_DE_ESTOQUE',
+                        detalhes: `Adicionado ${retalhoData.quantidade}. Estoque anterior: ${existingRetalho.quantidade}, Estoque novo: ${newQuantity}.`
+                    });
+                    Swal.fire('Sucesso!', 'A quantidade foi somada ao retalho existente.', 'success');
+                    closeModal(get(SELECTORS.registerModal));
+                    handleLoadRetalhos();
+                }
+                dom.toggleSubmitButton(submitBtn, false, 'Cadastrar');
+            }
+            return;
+        }
+    }
+
+    // --- FLUXO NORMAL DE CADASTRO OU EDIÇÃO ---
     let result;
     if (isEditMode) {
         const id = form.elements['edit-retalho-id'].value;
@@ -290,15 +345,18 @@ async function handleRegisterSubmit() {
     } else {
         result = await api.createRetalho({ ...retalhoData, reservado: false });
     }
-    if(result.error) {
+
+    if (result.error) {
         console.error(`Erro ao ${isEditMode ? 'editar' : 'cadastrar'} retalho:`, result.error);
         Swal.fire('Erro', `Não foi possível ${isEditMode ? 'salvar as alterações' : 'cadastrar o retalho'}.`, 'error');
     } else {
-        const logData = {
-            retalho_id: result.data.id, user_id: currentUser.id, user_email: currentUser.email,
-            acao: isEditMode ? 'EDICAO' : 'CRIACAO', detalhes: isEditMode ? 'Retalho editado.' : 'Novo retalho cadastrado.'
-        };
-        await api.registrarAuditoria(logData);
+        await api.registrarAuditoria({
+            retalho_id: result.data.id,
+            user_id: currentUser.id,
+            user_email: currentUser.email,
+            acao: isEditMode ? 'EDICAO' : 'CRIACAO',
+            detalhes: isEditMode ? 'Retalho editado.' : 'Novo retalho cadastrado.'
+        });
         Swal.fire('Sucesso!', `Retalho ${isEditMode ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
         closeModal(get(SELECTORS.registerModal));
         handleLoadRetalhos();
