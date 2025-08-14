@@ -4,18 +4,31 @@ import { createRetalhoTableRow, createRetalhoCard, createReservedItemsTable, cre
 const get = (selector) => document.querySelector(selector);
 const getAll = (selector) => document.querySelectorAll(selector);
 
+// ==========================================================
+// FUNÇÃO CORRIGIDA ABAIXO
+// ==========================================================
 export function renderRetalhos(retalhos) {
   const tableBody = get(SELECTORS.resultsTableBody);
   const cardsContainer = get(SELECTORS.resultsCardsContainer);
   if (!tableBody || !cardsContainer) return;
 
+  // Limpa os resultados anteriores
   tableBody.innerHTML = '';
   cardsContainer.innerHTML = '';
 
+  // Verifica se a lista de retalhos tem algum item
   const hasResults = retalhos && retalhos.length > 0;
-  get(SELECTORS.emptyState).classList.toggle('hidden', !hasResults);
+
+  // LÓGICA DE VISIBILIDADE SINCRONIZADA
+  // 1. Se 'hasResults' for verdadeiro, a classe 'hidden' é ADICIONADA à mensagem de "vazio" (escondendo-a).
+  //    Se for falso, a classe 'hidden' é REMOVIDA (mostrando-a).
+  get(SELECTORS.emptyState).classList.toggle('hidden', hasResults);
+
+  // 2. A lógica aqui é invertida com '!'. Se 'hasResults' for verdadeiro, a classe 'hidden' é REMOVIDA do container de resultados (mostrando-o).
+  //    Se for falso, a classe 'hidden' é ADICIONADA (escondendo-o).
   get(SELECTORS.resultsContainer).classList.toggle('hidden', !hasResults);
   
+  // Se houver resultados, preenche o grid/tabela
   if (hasResults) {
     retalhos.forEach(retalho => {
       tableBody.appendChild(createRetalhoTableRow(retalho));
@@ -23,6 +36,9 @@ export function renderRetalhos(retalhos) {
     });
   }
 }
+// ==========================================================
+// FIM DA CORREÇÃO
+// ==========================================================
 
 export function populateSelect(selectElement, items, { defaultOption, textKey, valueKey, addOptions = [] }) {
     if (!selectElement) return;
@@ -63,7 +79,8 @@ export function updatePagination(currentPage, totalItems, itemsPerPage) {
 export function toggleClearButtonVisibility() {
     const form = get(SELECTORS.filterForm);
     if (!form) return;
-    const hasFilter = form.elements.material.value || form.elements.tipo.value || form.elements.espessura.value || form.elements.largura.value || form.elements.altura.value || get(SELECTORS.smartSearchInput).value;
+    const smartSearch = get(SELECTORS.smartSearchInput);
+    const hasFilter = form.elements.material.value || form.elements.tipo.value || form.elements.espessura.value || form.elements.largura.value || form.elements.altura.value || (smartSearch && smartSearch.value);
     get(SELECTORS.clearBtn).classList.toggle('hidden', !hasFilter);
 }
 
@@ -110,9 +127,6 @@ export function updateSortVisuals(column, direction) {
     });
 }
 
-// ==========================================================
-// FUNÇÃO CORRIGIDA ABAIXO
-// ==========================================================
 export function toggleSubmitButton(button, isSubmitting, text) {
     if (!button) return;
     button.disabled = isSubmitting;
@@ -127,9 +141,6 @@ export function toggleSubmitButton(button, isSubmitting, text) {
         textElement.textContent = text;
     }
 }
-// ==========================================================
-// FIM DA CORREÇÃO
-// ==========================================================
 
 export function renderAuditoria(logs) {
     const container = get(SELECTORS.historyModalContent);
