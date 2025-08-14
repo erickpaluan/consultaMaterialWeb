@@ -1,11 +1,3 @@
-// js/services/supabaseService.js
-
-/**
- * Camada de API. Todas as interações com o Supabase ficam aqui.
- * Essas funções são "burras": elas apenas pedem ou enviam dados.
- * NOTA: Este arquivo assume que o cliente 'supabase' foi inicializado globalmente
- * ou importado de outro arquivo de configuração (ex: supabaseClient.js).
- */
 import { supabase } from "./supabaseClient.js";
 export async function fetchRetalhos(filters, pagination, sort) {
   let query = supabase

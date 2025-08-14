@@ -1,30 +1,58 @@
-import { SELECTORS } from './selectors.js';
+import { SELECTORS } from '../selectors.js';
 import { createRetalhoTableRow, createRetalhoCard, createReservedItemsTable, createHistoryLog } from './components.js';
 
 const get = (selector) => document.querySelector(selector);
 const getAll = (selector) => document.querySelectorAll(selector);
 
 export function renderRetalhos(retalhos) {
-  get(SELECTORS.resultsTableBody).innerHTML = '';
-  get(SELECTORS.resultsCardsContainer).innerHTML = '';
-  const hasResults = retalhos.length > 0;
-  get(SELECTORS.emptyState).classList.toggle('hidden', hasResults);
+  const tableBody = get(SELECTORS.resultsTableBody);
+  const cardsContainer = get(SELECTORS.resultsCardsContainer);
+  if (!tableBody || !cardsContainer) return;
+
+  tableBody.innerHTML = '';
+  cardsContainer.innerHTML = '';
+
+  const hasResults = retalhos && retalhos.length > 0;
+  get(SELECTORS.emptyState).classList.toggle('hidden', !hasResults);
   get(SELECTORS.resultsContainer).classList.toggle('hidden', !hasResults);
   
   if (hasResults) {
     retalhos.forEach(retalho => {
-      get(SELECTORS.resultsTableBody).appendChild(createRetalhoTableRow(retalho));
-      get(SELECTORS.resultsCardsContainer).appendChild(createRetalhoCard(retalho));
+      tableBody.appendChild(createRetalhoTableRow(retalho));
+      cardsContainer.appendChild(createRetalhoCard(retalho));
     });
   }
 }
 
-export function populateSelect(selectElement, items, { defaultOption, textKey, valueKey, addOptions = [] }) { /* ...código sem alteração... */ }
-export function toggleLoader(isLoading) { get(SELECTORS.loader).classList.toggle('hidden', !isLoading); }
+export function populateSelect(selectElement, items, { defaultOption, textKey, valueKey, addOptions = [] }) {
+    if (!selectElement) return;
+    const currentValue = selectElement.value;
+    selectElement.innerHTML = `<option value="">${defaultOption}</option>`;
+    items.forEach(item => {
+        const option = document.createElement('option');
+        const value = valueKey ? item[valueKey] : item;
+        const text = textKey ? item[textKey] : item;
+        option.value = value;
+        option.textContent = text;
+        selectElement.appendChild(option);
+    });
+    addOptions.forEach(opt => selectElement.innerHTML += opt);
+    if (currentValue && Array.from(selectElement.options).some(opt => opt.value === currentValue)) {
+        selectElement.value = currentValue;
+    }
+}
+
+export function toggleLoader(isLoading) {
+    get(SELECTORS.loader).classList.toggle('hidden', !isLoading);
+}
 
 export function updatePagination(currentPage, totalItems, itemsPerPage) {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    get(SELECTORS.paginationControls).classList.toggle('hidden', totalPages <= 1);
+    const paginationControls = get(SELECTORS.paginationControls);
+    if (!paginationControls) return;
+
+    paginationControls.classList.toggle('hidden', totalPages <= 1);
+    
     if (totalPages > 1) {
         get(SELECTORS.pageInfo).textContent = `Página ${currentPage} de ${totalPages}`;
         get(SELECTORS.prevPageBtn).disabled = currentPage === 1;
@@ -34,20 +62,28 @@ export function updatePagination(currentPage, totalItems, itemsPerPage) {
 
 export function toggleClearButtonVisibility() {
     const form = get(SELECTORS.filterForm);
+    if (!form) return;
     const hasFilter = form.elements.material.value || form.elements.tipo.value || form.elements.espessura.value || form.elements.largura.value || form.elements.altura.value || get(SELECTORS.smartSearchInput).value;
     get(SELECTORS.clearBtn).classList.toggle('hidden', !hasFilter);
 }
 
 export function resetFilterForm() {
-    get(SELECTORS.filterForm).reset();
-    get(SELECTORS.smartSearchInput).value = '';
-    get(SELECTORS.tipoSelect).innerHTML = '<option value="">Todos os Tipos</option>';
-    get(SELECTORS.espessuraSelect).innerHTML = '<option value="">Todas as Espessuras</option>';
+    get(SELECTORS.filterForm)?.reset();
+    const smartSearchInput = get(SELECTORS.smartSearchInput);
+    if(smartSearchInput) smartSearchInput.value = '';
+
+    const tipoSelect = get(SELECTORS.tipoSelect);
+    if(tipoSelect) tipoSelect.innerHTML = '<option value="">Todos os Tipos</option>';
+    
+    const espessuraSelect = get(SELECTORS.espessuraSelect);
+    if(espessuraSelect) espessuraSelect.innerHTML = '<option value="">Todas as Espessuras</option>';
+    
     toggleClearButtonVisibility();
 }
 
 export function resetRegisterForm() {
     const form = get(SELECTORS.registerForm);
+    if (!form) return;
     form.reset();
     get(SELECTORS.regNovoMaterialContainer).classList.add('hidden');
     get(SELECTORS.regNovoTipoContainer).classList.add('hidden');
@@ -56,6 +92,7 @@ export function resetRegisterForm() {
 
 export function renderReservedItems(data) {
     const container = get(SELECTORS.reservedModalContent);
+    if (!container) return;
     container.innerHTML = '';
     if(!data || data.length === 0) {
         container.innerHTML = `<p class="text-center text-gray-500 p-4">Nenhum retalho reservado encontrado.</p>`;
@@ -73,12 +110,30 @@ export function updateSortVisuals(column, direction) {
     });
 }
 
+// ==========================================================
+// FUNÇÃO CORRIGIDA ABAIXO
+// ==========================================================
 export function toggleSubmitButton(button, isSubmitting, text) {
+    if (!button) return;
     button.disabled = isSubmitting;
-    button.querySelector('.reg-spinner').classList.toggle('hidden', !isSubmitting);
-    button.querySelector('.reg-btn-text').textContent = text;
+    
+    const spinnerElement = button.querySelector(SELECTORS.regSpinner);
+    if (spinnerElement) {
+        spinnerElement.classList.toggle('hidden', !isSubmitting);
+    }
+    
+    const textElement = button.querySelector(SELECTORS.regSubmitBtnText);
+    if (textElement) {
+        textElement.textContent = text;
+    }
 }
+// ==========================================================
+// FIM DA CORREÇÃO
+// ==========================================================
 
 export function renderAuditoria(logs) {
-    get(SELECTORS.historyModalContent).innerHTML = createHistoryLog(logs);
+    const container = get(SELECTORS.historyModalContent);
+    if (container) {
+        container.innerHTML = createHistoryLog(logs);
+    }
 }

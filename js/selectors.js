@@ -50,6 +50,7 @@ export const SELECTORS = {
     editRetalhoId: "#edit-retalho-id",
     regSubmitBtn: "#reg-submit-btn",
     regSubmitBtnText: ".reg-btn-text",
+    regSpinner: ".reg-spinner",
     regClearBtn: "#reg-clear-btn",
     regNovoMaterialContainer: "#reg-novo-material-container",
     regNovoMaterialInput: "#reg-novo-material-input",

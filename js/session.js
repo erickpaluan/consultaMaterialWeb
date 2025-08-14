@@ -5,6 +5,9 @@ import { setState } from "./state.js";
 
 let appInitialized = false;
 
+const get = (selector) => document.querySelector(selector);
+const getAll = (selector) => document.querySelectorAll(selector);
+
 const getInitials = (name) => {
     if (!name) return "?";
     const names = name.split(' ');
@@ -19,17 +22,17 @@ const updateUserUI = (user, profile) => {
     const fullName = profile.full_name || user.email;
     const role = profile.role === 'admin' ? 'Administrador' : 'Usuário';
 
-    document.querySelector(SELECTORS.userInitialsBtn).textContent = getInitials(fullName);
-    document.querySelector(SELECTORS.userFullname).textContent = fullName;
-    document.querySelector(SELECTORS.userEmailRole).textContent = `${user.email} (${role})`;
+    get(SELECTORS.userInitialsBtn).textContent = getInitials(fullName);
+    get(SELECTORS.userFullname).textContent = fullName;
+    get(SELECTORS.userEmailRole).textContent = `${user.email} (${role})`;
 
     const isAdmin = profile.role === "admin";
-    document.querySelectorAll(SELECTORS.adminOnlyContent).forEach(el => el.classList.toggle("hidden", !isAdmin));
+    getAll(SELECTORS.adminOnlyContent).forEach(el => el.classList.toggle("hidden", !isAdmin));
 };
 
 const showApp = () => {
-    document.querySelector(SELECTORS.authenticatedContent).classList.remove("hidden");
-    document.querySelector(SELECTORS.unauthenticatedContent).classList.add("hidden");
+    get(SELECTORS.authenticatedContent).classList.remove("hidden");
+    get(SELECTORS.unauthenticatedContent).classList.add("hidden");
     if (!appInitialized) {
         initializeApp();
         appInitialized = true;
@@ -68,14 +71,19 @@ const checkSession = async () => {
 };
 
 export const initializeAuth = () => {
-    document.querySelector(SELECTORS.logoutBtn)?.addEventListener("click", async () => {
-        await supabase.auth.signOut();
-    });
+    const logoutBtn = get(SELECTORS.logoutBtn);
+    if (logoutBtn) {
+        logoutBtn.addEventListener("click", async () => {
+            await supabase.auth.signOut();
+        });
+    }
+    
     supabase.auth.onAuthStateChange((_event, session) => {
         if (!session) {
             appInitialized = false;
             redirectToLogin();
         }
     });
+    
     checkSession();
 };
