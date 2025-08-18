@@ -9,7 +9,6 @@ let isAppInitialized = false;
 
 export function initializeApp() {
   if (isAppInitialized) return;
-  console.log("Inicializando a aplicação principal...");
 
   get(SELECTORS.smartSearchInput).addEventListener('input', handlers.debouncedSmartSearch);
   get(SELECTORS.filterForm).addEventListener('submit', (e) => e.preventDefault());

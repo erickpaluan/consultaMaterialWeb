@@ -1,4 +1,3 @@
-// js/handlers.js
 import * as api from './services/api.js';
 import * as dom from './ui/dom.js';
 import { SELECTORS } from './selectors.js';
@@ -10,6 +9,8 @@ import { debounce } from './utils.js';
 const get = (selector) => document.querySelector(selector);
 let currentRetalhoToEdit = null;
 
+// --- FUNÇÕES DE LÓGICA (parseSearchQuery, etc.) ---
+// ... (O código das outras funções permanece o mesmo)
 function parseSearchQuery(query) {
     const normalizedQuery = query.toLowerCase().replace(/,/g, '.');
     const terms = normalizedQuery.split(/\s+/).filter(Boolean);
@@ -267,64 +268,41 @@ function handleClearRegisterForm() {
 
 async function handleRegisterSubmit() {
     if (!validateRegisterForm()) return;
-
     const form = get(SELECTORS.registerForm);
     const submitBtn = get(SELECTORS.regSubmitBtn);
     const isEditMode = !!form.elements['edit-retalho-id'].value;
     const { currentUser } = getState();
-    
-    // Coleta os dados do formulário e padroniza para minúsculas
     let materialValue = form.elements['reg-material'].value;
     if (materialValue === 'novo-material') materialValue = get(SELECTORS.regNovoMaterialInput).value.trim();
     let tipoValue = form.elements['reg-tipo'].value;
     if (tipoValue === 'novo-tipo') tipoValue = get(SELECTORS.regNovoTipoInput).value.trim();
-
     const retalhoData = {
-      numero: parseFloat(form.elements['reg-numero'].value),
-      gaveta: form.elements['reg-gaveta'].value,
-      material: materialValue.toLowerCase().trim(),
-      tipo: tipoValue.toLowerCase().trim(),
-      espessura: parseFloat(form.elements['reg-espessura'].value),
-      comprimento: parseFloat(form.elements['reg-comprimento'].value),
-      largura: parseFloat(form.elements['reg-largura'].value),
-      quantidade: parseInt(form.elements['reg-quantidade'].value, 10),
-      obs: form.elements['reg-obs'].value || null,
+      numero: parseFloat(form.elements['reg-numero'].value), gaveta: form.elements['reg-gaveta'].value,
+      material: materialValue, tipo: tipoValue, espessura: parseFloat(form.elements['reg-espessura'].value),
+      comprimento: parseFloat(form.elements['reg-comprimento'].value), largura: parseFloat(form.elements['reg-largura'].value),
+      quantidade: parseInt(form.elements['reg-quantidade'].value, 10), obs: form.elements['reg-obs'].value || null,
     };
-
     dom.toggleSubmitButton(submitBtn, true, isEditMode ? 'Salvando...' : 'Verificando...');
-
-    // --- NOVO FLUXO DE VERIFICAÇÃO DE DUPLICATAS ---
     if (!isEditMode) {
         const existingRetalho = await api.checkForExistingRetalho(retalhoData);
-
         if (existingRetalho) {
             dom.toggleSubmitButton(submitBtn, false, 'Cadastrar');
-            
             const { isConfirmed } = await Swal.fire({
                 title: 'Retalho Duplicado Encontrado!',
                 html: `Já existe um retalho (Nº: <strong>${existingRetalho.numero}</strong>) com estas mesmas características.<br><br>Deseja somar a quantidade <strong>(${retalhoData.quantidade})</strong> ao estoque existente?`,
-                icon: 'question',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Sim, somar ao estoque!',
-                cancelButtonText: 'Não, cancelar'
+                icon: 'question', showCancelButton: true, confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33', confirmButtonText: 'Sim, somar ao estoque!', cancelButtonText: 'Não, cancelar'
             });
-
             if (isConfirmed) {
                 dom.toggleSubmitButton(submitBtn, true, 'Atualizando...');
                 const newQuantity = existingRetalho.quantidade + retalhoData.quantidade;
                 const { error: updateError } = await api.updateRetalho(existingRetalho.id, { quantidade: newQuantity });
-
                 if (updateError) {
                     Swal.fire('Erro!', 'Não foi possível atualizar a quantidade.', 'error');
                 } else {
                     await api.registrarAuditoria({
-                        retalho_id: existingRetalho.id,
-                        user_id: currentUser.id,
-                        user_email: currentUser.email,
-                        acao: 'SOMA_DE_ESTOQUE',
-                        detalhes: `Adicionado ${retalhoData.quantidade}. Estoque anterior: ${existingRetalho.quantidade}, Estoque novo: ${newQuantity}.`
+                        retalho_id: existingRetalho.id, user_id: currentUser.id, user_email: currentUser.email,
+                        acao: 'SOMA_DE_ESTOQUE', detalhes: `Adicionado ${retalhoData.quantidade}. Estoque anterior: ${existingRetalho.quantidade}, Estoque novo: ${newQuantity}.`
                     });
                     Swal.fire('Sucesso!', 'A quantidade foi somada ao retalho existente.', 'success');
                     closeModal(get(SELECTORS.registerModal));
@@ -335,8 +313,6 @@ async function handleRegisterSubmit() {
             return;
         }
     }
-
-    // --- FLUXO NORMAL DE CADASTRO OU EDIÇÃO ---
     let result;
     if (isEditMode) {
         const id = form.elements['edit-retalho-id'].value;
@@ -345,17 +321,13 @@ async function handleRegisterSubmit() {
     } else {
         result = await api.createRetalho({ ...retalhoData, reservado: false });
     }
-
     if (result.error) {
         console.error(`Erro ao ${isEditMode ? 'editar' : 'cadastrar'} retalho:`, result.error);
         Swal.fire('Erro', `Não foi possível ${isEditMode ? 'salvar as alterações' : 'cadastrar o retalho'}.`, 'error');
     } else {
         await api.registrarAuditoria({
-            retalho_id: result.data.id,
-            user_id: currentUser.id,
-            user_email: currentUser.email,
-            acao: isEditMode ? 'EDICAO' : 'CRIACAO',
-            detalhes: isEditMode ? 'Retalho editado.' : 'Novo retalho cadastrado.'
+            retalho_id: result.data.id, user_id: currentUser.id, user_email: currentUser.email,
+            acao: isEditMode ? 'EDICAO' : 'CRIACAO', detalhes: isEditMode ? 'Retalho editado.' : 'Novo retalho cadastrado.'
         });
         Swal.fire('Sucesso!', `Retalho ${isEditMode ? 'atualizado' : 'cadastrado'} com sucesso!`, 'success');
         closeModal(get(SELECTORS.registerModal));
@@ -447,28 +419,64 @@ async function handleFetchReservedItems(searchTerm = "") {
     }
 }
 
+// ==========================================================
+// FUNÇÃO CORRIGIDA ABAIXO
+// ==========================================================
 async function handleCancelReserve(event) {
     const button = event.target.closest('.cancel-btn');
     if (!button) return;
+
     const { reservaId, retalhoId, quantidadeReservada } = button.dataset;
-    const { isConfirmed } = await Swal.fire({ title: "Tem certeza?", text: "Esta ação irá cancelar a reserva.", icon: "warning", showCancelButton: true, confirmButtonColor: "#d33", confirmButtonText: "Sim, cancelar!" });
+
+    const { isConfirmed } = await Swal.fire({
+        title: "Tem certeza?",
+        text: "Esta ação irá cancelar a reserva e retornar o item ao estoque.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonColor: "#d33",
+        cancelButtonText: "Não",
+        confirmButtonText: "Sim, cancelar!"
+    });
+
     if (isConfirmed) {
         const { currentUser } = getState();
-        await api.deleteReserva(reservaId);
+
+        // 1. Tenta deletar a reserva e VERIFICA O ERRO
+        const { error: deleteError } = await api.deleteReserva(reservaId);
+
+        if (deleteError) {
+            console.error("Erro ao deletar reserva (RLS?):", deleteError);
+            Swal.fire("Erro!", "Não foi possível cancelar a reserva. Verifique suas permissões (RLS) no Supabase.", "error");
+            return; // Interrompe a função aqui se a exclusão falhar
+        }
+        
+        // 2. Se a exclusão teve sucesso, continua com o resto da lógica
         const { data: retalho } = await api.fetchRetalhoById(retalhoId);
         const novaQuantidade = (retalho?.quantidade || 0) + parseInt(quantidadeReservada, 10);
+        
         const { data: outrasReservas } = await api.fetchReservationsByRetalhoId(retalhoId);
         await api.updateRetalho(retalhoId, { quantidade: novaQuantidade, reservado: outrasReservas.length > 0 });
-        const logData = {
-            retalho_id: retalhoId, user_id: currentUser.id, user_email: currentUser.email,
-            acao: 'CANCELAMENTO_RESERVA', detalhes: `Quantidade devolvida: ${quantidadeReservada}`
-        };
-        await api.registrarAuditoria(logData);
-        Swal.fire("Cancelado!", "A reserva foi cancelada.", "success");
+        
+        await api.registrarAuditoria({
+            retalho_id: retalhoId,
+            user_id: currentUser.id,
+            user_email: currentUser.email,
+            acao: 'CANCELAMENTO_RESERVA',
+            detalhes: `Quantidade devolvida ao estoque: ${quantidadeReservada}`
+        });
+        
+        await Swal.fire("Cancelado!", "A reserva foi cancelada com sucesso.", "success");
+        
+        // A LINHA DA CORREÇÃO: Recarrega os itens no modal
         handleFetchReservedItems(get(SELECTORS.osSearchInput).value);
+
+        // Recarrega a lista principal em segundo plano
         handleLoadRetalhos();
     }
 }
+// ==========================================================
+// FIM DA CORREÇÃO
+// ==========================================================
 
 function handleGeneratePdf() {
     const content = get(SELECTORS.reservedModalContent);
