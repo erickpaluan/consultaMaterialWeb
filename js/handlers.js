@@ -9,8 +9,64 @@ import { debounce } from './utils.js';
 const get = (selector) => document.querySelector(selector);
 let currentRetalhoToEdit = null;
 
-// --- FUNÇÕES DE LÓGICA (parseSearchQuery, etc.) ---
-// ... (O código das outras funções permanece o mesmo)
+async function handleDeleteRetalho(event) {
+    const button = event.target.closest('.delete-btn');
+    if (!button) return;
+    const { id: retalhoId, numero: retalhoNumero } = button.dataset;
+    const { isConfirmed } = await Swal.fire({
+        title: `Tem certeza que deseja excluir o Retalho Nº ${retalhoNumero}?`,
+        text: "Esta ação é irreversível e removerá o item permanentemente do estoque.",
+        icon: 'warning', showCancelButton: true, confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6', confirmButtonText: 'Sim, excluir!', cancelButtonText: 'Cancelar'
+    });
+    if (isConfirmed) {
+        const { error } = await api.deleteRetalho(retalhoId);
+        if (error) {
+            console.error("Erro ao excluir retalho:", error);
+            return Swal.fire('Erro!', 'Não foi possível excluir o retalho.', 'error');
+        }
+        const { currentUser } = getState();
+        await api.registrarAuditoria({
+            retalho_id: retalhoId, user_id: currentUser.id, user_email: currentUser.email,
+            acao: 'EXCLUSAO_MANUAL', detalhes: `Retalho Nº ${retalhoNumero} excluído permanentemente.`
+        });
+        await Swal.fire('Excluído!', 'O retalho foi removido com sucesso.', 'success');
+        handleLoadRetalhos();
+    }
+}
+
+async function handleBaixaRetalho(event) {
+    const button = event.target.closest('.baixa-btn');
+    if (!button) return;
+    const { reservaId, retalhoId, os, numero } = button.dataset;
+    const { isConfirmed } = await Swal.fire({
+        title: 'Confirmar Baixa de Retalho?',
+        html: `Confirma o uso do Retalho Nº <strong>${numero}</strong> na OS <strong>${os}</strong>?<br/><br/>A reserva e o retalho serão removidos permanentemente.`,
+        icon: 'question', showCancelButton: true, confirmButtonColor: '#28a745',
+        cancelButtonColor: '#d33', confirmButtonText: 'Sim, confirmar uso!', cancelButtonText: 'Cancelar'
+    });
+    if (isConfirmed) {
+        const { error: reservaError } = await api.deleteReserva(reservaId);
+        if (reservaError) {
+            console.error("Erro ao deletar reserva na baixa:", reservaError);
+            return Swal.fire('Erro!', 'Não foi possível remover a reserva.', 'error');
+        }
+        const { error: retalhoError } = await api.deleteRetalho(retalhoId);
+        if (retalhoError) {
+            console.error("Erro ao deletar retalho na baixa:", retalhoError);
+            return Swal.fire('Erro!', 'Reserva removida, mas falha ao dar baixa no retalho.', 'error');
+        }
+        const { currentUser } = getState();
+        await api.registrarAuditoria({
+            retalho_id: retalhoId, user_id: currentUser.id, user_email: currentUser.email,
+            acao: 'BAIXA_POR_USO', detalhes: `Baixa do Retalho Nº ${numero} para uso na OS: ${os}.`
+        });
+        await Swal.fire('Sucesso!', 'Baixa do retalho realizada com sucesso.', 'success');
+        handleFetchReservedItems(get(SELECTORS.osSearchInput).value);
+        handleLoadRetalhos();
+    }
+}
+
 function parseSearchQuery(query) {
     const normalizedQuery = query.toLowerCase().replace(/,/g, '.');
     const terms = normalizedQuery.split(/\s+/).filter(Boolean);
@@ -189,9 +245,7 @@ async function handleOpenEditModal(event) {
     if (!button) return;
     const retalhoId = button.dataset.id;
     const { data, error } = await api.fetchFullRetalhoById(retalhoId);
-    if(error) {
-        return Swal.fire('Erro', 'Não foi possível carregar os dados do retalho para edição.', 'error');
-    }
+    if(error) { return Swal.fire('Erro', 'Não foi possível carregar os dados para edição.', 'error'); }
     await setupRegisterModal('edit', data);
 }
 
@@ -291,7 +345,7 @@ async function handleRegisterSubmit() {
                 title: 'Retalho Duplicado Encontrado!',
                 html: `Já existe um retalho (Nº: <strong>${existingRetalho.numero}</strong>) com estas mesmas características.<br><br>Deseja somar a quantidade <strong>(${retalhoData.quantidade})</strong> ao estoque existente?`,
                 icon: 'question', showCancelButton: true, confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33', confirmButtonText: 'Sim, somar ao estoque!', cancelButtonText: 'Não, cancelar'
+                cancelButtonColor: '#d33', confirmButtonText: 'Sim, somar!', cancelButtonText: 'Não, cancelar'
             });
             if (isConfirmed) {
                 dom.toggleSubmitButton(submitBtn, true, 'Atualizando...');
@@ -365,7 +419,7 @@ async function handleConfirmReserve() {
     if (!os) return Swal.fire("Atenção", "Por favor, insira o número da OS.", "warning");
     if (quantidadeReservar <= 0 || quantidadeReservar > quantidadeDisponivel) return Swal.fire("Atenção", `A quantidade deve ser entre 1 e ${quantidadeDisponivel}.`, "warning");
     get(SELECTORS.reserveConfirmBtn).disabled = true;
-    const reservaData = { retalho_id: id, numero_os: os, quantidade_reservada: quantidadeReservar };
+    const reservaData = { retalho_id: id, numero_os: os, quantidade_reservada: quantidadeReservar, user_id: currentUser.id };
     const retalhoUpdateData = { quantidade: quantidadeDisponivel - quantidadeReservar, reservado: true };
     const { error: reservaError } = await api.createReserva(reservaData);
     if (reservaError) {
@@ -419,64 +473,36 @@ async function handleFetchReservedItems(searchTerm = "") {
     }
 }
 
-// ==========================================================
-// FUNÇÃO CORRIGIDA ABAIXO
-// ==========================================================
 async function handleCancelReserve(event) {
     const button = event.target.closest('.cancel-btn');
     if (!button) return;
-
     const { reservaId, retalhoId, quantidadeReservada } = button.dataset;
-
     const { isConfirmed } = await Swal.fire({
-        title: "Tem certeza?",
-        text: "Esta ação irá cancelar a reserva e retornar o item ao estoque.",
-        icon: "warning",
-        showCancelButton: true,
-        confirmButtonColor: "#d33",
-        cancelButtonText: "Não",
-        confirmButtonText: "Sim, cancelar!"
+        title: "Tem certeza?", text: "Esta ação irá cancelar a reserva e retornar o item ao estoque.",
+        icon: "warning", showCancelButton: true, confirmButtonColor: "#d33",
+        cancelButtonText: "Não", confirmButtonText: "Sim, cancelar!"
     });
-
     if (isConfirmed) {
-        const { currentUser } = getState();
-
-        // 1. Tenta deletar a reserva e VERIFICA O ERRO
         const { error: deleteError } = await api.deleteReserva(reservaId);
-
         if (deleteError) {
             console.error("Erro ao deletar reserva (RLS?):", deleteError);
-            Swal.fire("Erro!", "Não foi possível cancelar a reserva. Verifique suas permissões (RLS) no Supabase.", "error");
-            return; // Interrompe a função aqui se a exclusão falhar
+            Swal.fire("Erro!", "Não foi possível cancelar a reserva. Verifique suas permissões (RLS).", "error");
+            return;
         }
-        
-        // 2. Se a exclusão teve sucesso, continua com o resto da lógica
         const { data: retalho } = await api.fetchRetalhoById(retalhoId);
         const novaQuantidade = (retalho?.quantidade || 0) + parseInt(quantidadeReservada, 10);
-        
         const { data: outrasReservas } = await api.fetchReservationsByRetalhoId(retalhoId);
         await api.updateRetalho(retalhoId, { quantidade: novaQuantidade, reservado: outrasReservas.length > 0 });
-        
+        const { currentUser } = getState();
         await api.registrarAuditoria({
-            retalho_id: retalhoId,
-            user_id: currentUser.id,
-            user_email: currentUser.email,
-            acao: 'CANCELAMENTO_RESERVA',
-            detalhes: `Quantidade devolvida ao estoque: ${quantidadeReservada}`
+            retalho_id: retalhoId, user_id: currentUser.id, user_email: currentUser.email,
+            acao: 'CANCELAMENTO_RESERVA', detalhes: `Quantidade devolvida ao estoque: ${quantidadeReservada}`
         });
-        
         await Swal.fire("Cancelado!", "A reserva foi cancelada com sucesso.", "success");
-        
-        // A LINHA DA CORREÇÃO: Recarrega os itens no modal
         handleFetchReservedItems(get(SELECTORS.osSearchInput).value);
-
-        // Recarrega a lista principal em segundo plano
         handleLoadRetalhos();
     }
 }
-// ==========================================================
-// FIM DA CORREÇÃO
-// ==========================================================
 
 function handleGeneratePdf() {
     const content = get(SELECTORS.reservedModalContent);
@@ -494,4 +520,4 @@ function handleGeneratePdf() {
     }});
 }
 
-export { handleLoadRetalhos, handleFilterFormChange, handleClearFilters, handlePageChange, handleSort, handleLoadFilterOptions, handleLoadTiposParaFiltro, handleLoadEspessurasParaFiltro, handleOpenRegisterModal, handleOpenEditModal, handleMaterialCadastroChange, handleTipoCadastroChange, handleSalvarNovoMaterial, handleSalvarNovoTipo, handleClearRegisterForm, handleRegisterSubmit, handleReserveClick, handleConfirmReserve, handleOpenHistoryModal, handleSearchReserved, handleFetchReservedItems, handleCancelReserve, handleGeneratePdf };
+export { handleLoadRetalhos, handleFilterFormChange, handleClearFilters, handlePageChange, handleSort, handleLoadFilterOptions, handleLoadTiposParaFiltro, handleLoadEspessurasParaFiltro, handleOpenRegisterModal, handleOpenEditModal, handleMaterialCadastroChange, handleTipoCadastroChange, handleSalvarNovoMaterial, handleSalvarNovoTipo, handleClearRegisterForm, handleRegisterSubmit, handleReserveClick, handleConfirmReserve, handleOpenHistoryModal, handleSearchReserved, handleFetchReservedItems, handleCancelReserve, handleGeneratePdf, handleDeleteRetalho, handleBaixaRetalho };

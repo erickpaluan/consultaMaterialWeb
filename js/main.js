@@ -9,6 +9,7 @@ let isAppInitialized = false;
 
 export function initializeApp() {
   if (isAppInitialized) return;
+  console.log("Inicializando a aplicação principal...");
 
   get(SELECTORS.smartSearchInput).addEventListener('input', handlers.debouncedSmartSearch);
   get(SELECTORS.filterForm).addEventListener('submit', (e) => e.preventDefault());
@@ -28,6 +29,7 @@ export function initializeApp() {
     if (e.target.closest('.edit-btn')) handlers.handleOpenEditModal(e);
     if (e.target.closest('.reserve-btn')) handlers.handleReserveClick(e);
     if (e.target.closest('.history-btn')) handlers.handleOpenHistoryModal(e);
+    if (e.target.closest('.delete-btn')) handlers.handleDeleteRetalho(e);
   });
 
   const form = get(SELECTORS.registerForm);
@@ -44,9 +46,12 @@ export function initializeApp() {
   get(SELECTORS.closeReserveModalBtn).addEventListener('click', () => closeModal(get(SELECTORS.reserveModal)));
   get(SELECTORS.reserveConfirmBtn).addEventListener('click', handlers.handleConfirmReserve);
   
+  get(SELECTORS.reservedModalContent).addEventListener('click', (e) => {
+      if (e.target.closest('.cancel-btn')) handlers.handleCancelReserve(e);
+      if (e.target.closest('.baixa-btn')) handlers.handleBaixaRetalho(e);
+  });
   get(SELECTORS.closeModalBtn).addEventListener('click', () => closeModal(get(SELECTORS.reservedModal)));
   get(SELECTORS.osSearchInput).addEventListener('input', handlers.handleSearchReserved);
-  get(SELECTORS.reservedModalContent).addEventListener('click', handlers.handleCancelReserve);
   get(SELECTORS.createPdfBtn).addEventListener('click', handlers.handleGeneratePdf);
   
   get(SELECTORS.closeHistoryModalBtn).addEventListener('click', () => closeModal(get(SELECTORS.historyModal)));

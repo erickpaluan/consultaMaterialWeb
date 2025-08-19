@@ -1,18 +1,15 @@
-// js/services/api.js
 import { supabase } from "./supabaseClient.js";
 
-/**
- * Verifica se já existe um retalho com as mesmas características.
- * @param {object} retalho - Objeto com as propriedades do retalho a ser verificado.
- * @returns {Promise<object|null>} - Retorna o retalho existente ou null.
- */
+export async function deleteRetalho(retalhoId) {
+    return await supabase.from("retalhos").delete().eq("id", retalhoId);
+}
+
 export async function checkForExistingRetalho(retalho) {
     const { data, error } = await supabase
       .from("retalhos")
       .select("*")
-      // Usa .ilike() para comparação case-insensitive
-      .ilike("material", retalho.material)
-      .ilike("tipo", retalho.tipo)
+      .eq("material", retalho.material)
+      .eq("tipo", retalho.tipo)
       .eq("espessura", retalho.espessura)
       .eq("comprimento", retalho.comprimento)
       .eq("largura", retalho.largura)
@@ -33,11 +30,11 @@ export async function fetchRetalhos(filters, pagination, sort) {
     .gt('quantidade', 0)
     .order(sort.column, { ascending: sort.direction });
 
-  if (filters.material) query = query.ilike("material", `%${filters.material}%`);
-  if (filters.tipo) query = query.ilike("tipo", `%${filters.tipo}%`);
+  if (filters.material) query = query.eq("material", filters.material);
+  if (filters.tipo) query = query.eq("tipo", filters.tipo);
   if (filters.espessura) query = query.eq("espessura", filters.espessura);
   if (filters.largura && !isNaN(parseFloat(filters.largura))) query = query.gte("largura", parseFloat(filters.largura));
-  if (filters.comprimento && !isNaN(parseFloat(filters.comprimento))) query = query.gte("comprimento", parseFloat(filters.comprimento));
+  if (filters.altura && !isNaN(parseFloat(filters.altura))) query = query.gte("comprimento", parseFloat(filters.altura));
   
   if (filters.textSearch && filters.textSearch.length > 0) {
     const searchConditions = filters.textSearch.map(term => 
