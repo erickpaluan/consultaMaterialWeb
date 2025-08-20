@@ -1,84 +1,76 @@
-import { ui } from './uiElements.js';
+import { SELECTORS } from './selectors.js';
 import * as handlers from './handlers.js';
 import { openModal, closeModal } from './ui/modals.js';
 import { initializeAuth } from './session.js';
 import { AUTO_REFRESH_INTERVAL } from './config.js';
 
+const get = (selector) => document.querySelector(selector);
 let isAppInitialized = false;
 
 export function initializeApp() {
   if (isAppInitialized) return;
   console.log("Inicializando a aplicação principal...");
 
-  // Listeners de Filtros
-  ui.filterForm.addEventListener('submit', (e) => e.preventDefault());
-  ui.materialSelect.addEventListener('change', handlers.handleLoadTiposParaFiltro);
-  ui.tipoSelect.addEventListener('change', handlers.handleLoadEspessurasParaFiltro);
-  const filterInputs = ui.filterForm.querySelectorAll('select, input');
-  filterInputs.forEach(input => {
+  get(SELECTORS.smartSearchInput).addEventListener('input', handlers.debouncedSmartSearch);
+  get(SELECTORS.filterForm).addEventListener('submit', (e) => e.preventDefault());
+  get(SELECTORS.materialSelect).addEventListener('change', handlers.handleFilterFormChange);
+  get(SELECTORS.tipoSelect).addEventListener('change', handlers.handleFilterFormChange);
+  get(SELECTORS.filterForm).querySelectorAll('input').forEach(input => {
     input.addEventListener('input', handlers.handleFilterFormChange);
   });
-  ui.clearBtn.addEventListener('click', handlers.handleClearFilters);
-
-  // Paginação e Ordenação
-  ui.prevPageBtn.addEventListener('click', () => handlers.handlePageChange(-1));
-  ui.nextPageBtn.addEventListener('click', () => handlers.handlePageChange(1));
-  ui.resultsTable.addEventListener('click', handlers.handleSort);
-
-  // Ações e Modais Globais
-  ui.openRegisterModalBtn.addEventListener('click', handlers.handleOpenRegisterModal);
-  ui.showReservedBtn.addEventListener('click', () => handlers.handleFetchReservedItems());
+  get(SELECTORS.clearBtn).addEventListener('click', handlers.handleClearFilters);
+  get(SELECTORS.prevPageBtn).addEventListener('click', () => handlers.handlePageChange(-1));
+  get(SELECTORS.nextPageBtn).addEventListener('click', () => handlers.handlePageChange(1));
+  get(SELECTORS.resultsTable).addEventListener('click', handlers.handleSort);
+  get(SELECTORS.openRegisterModalBtn).addEventListener('click', handlers.handleOpenRegisterModal);
+  get(SELECTORS.showReservedBtn).addEventListener('click', () => handlers.handleFetchReservedItems());
   
-  // Ações nos itens (Editar, Reservar e Histórico)
-  ui.resultsContainer.addEventListener('click', (e) => {
+  get(SELECTORS.resultsContainer).addEventListener('click', (e) => {
     if (e.target.closest('.edit-btn')) handlers.handleOpenEditModal(e);
     if (e.target.closest('.reserve-btn')) handlers.handleReserveClick(e);
     if (e.target.closest('.history-btn')) handlers.handleOpenHistoryModal(e);
+    if (e.target.closest('.delete-btn')) handlers.handleDeleteRetalho(e);
   });
 
-  // Modal de Cadastro/Edição
-  ui.closeRegisterModalBtn.addEventListener('click', () => closeModal(ui.registerModal));
-  ui.regSubmitBtn.addEventListener('click', handlers.handleRegisterSubmit);
-  ui.regMaterialSelect.addEventListener('change', handlers.handleMaterialCadastroChange);
-  ui.regTipoSelect.addEventListener('change', handlers.handleTipoCadastroChange);
-  ui.regSalvarNovoMaterialBtn.addEventListener('click', handlers.handleSalvarNovoMaterial);
-  ui.regSalvarNovoTipoBtn.addEventListener('click', handlers.handleSalvarNovoTipo);
-  ui.regCancelarNovoMaterialBtn.addEventListener('click', () => ui.regNovoMaterialContainer.classList.add('hidden'));
-  ui.regCancelarNovoTipoBtn.addEventListener('click', () => ui.regNovoTipoContainer.classList.add('hidden'));
-  ui.regClearBtn.addEventListener('click', handlers.handleClearRegisterForm);
-
-  // Modal de Reserva
-  ui.closeReserveModalBtn.addEventListener('click', () => closeModal(ui.reserveModal));
-  ui.reserveConfirmBtn.addEventListener('click', handlers.handleConfirmReserve);
+  const form = get(SELECTORS.registerForm);
+  get(SELECTORS.closeRegisterModalBtn).addEventListener('click', () => closeModal(get(SELECTORS.registerModal)));
+  get(SELECTORS.regSubmitBtn).addEventListener('click', handlers.handleRegisterSubmit);
+  form.elements['reg-material'].addEventListener('change', handlers.handleMaterialCadastroChange);
+  form.elements['reg-tipo'].addEventListener('change', handlers.handleTipoCadastroChange);
+  get(SELECTORS.regSalvarNovoMaterialBtn).addEventListener('click', handlers.handleSalvarNovoMaterial);
+  get(SELECTORS.regSalvarNovoTipoBtn).addEventListener('click', handlers.handleSalvarNovoTipo);
+  get(SELECTORS.regCancelarNovoMaterialBtn).addEventListener('click', () => get(SELECTORS.regNovoMaterialContainer).classList.add('hidden'));
+  get(SELECTORS.regCancelarNovoTipoBtn).addEventListener('click', () => get(SELECTORS.regNovoTipoContainer).classList.add('hidden'));
+  get(SELECTORS.regClearBtn).addEventListener('click', handlers.handleClearRegisterForm);
   
-  // Modal de Itens Reservados
-  ui.closeModalBtn.addEventListener('click', () => closeModal(ui.reservedModal));
-  ui.osSearchInput.addEventListener('input', handlers.handleSearchReserved);
-  ui.reservedModalContent.addEventListener('click', handlers.handleCancelReserve);
-  ui.createPdfBtn.addEventListener('click', handlers.handleGeneratePdf);
+  get(SELECTORS.closeReserveModalBtn).addEventListener('click', () => closeModal(get(SELECTORS.reserveModal)));
+  get(SELECTORS.reserveConfirmBtn).addEventListener('click', handlers.handleConfirmReserve);
+  
+  get(SELECTORS.reservedModalContent).addEventListener('click', (e) => {
+      if (e.target.closest('.cancel-btn')) handlers.handleCancelReserve(e);
+      if (e.target.closest('.baixa-btn')) handlers.handleBaixaRetalho(e);
+  });
+  get(SELECTORS.closeModalBtn).addEventListener('click', () => closeModal(get(SELECTORS.reservedModal)));
+  get(SELECTORS.osSearchInput).addEventListener('input', handlers.handleSearchReserved);
+  get(SELECTORS.createPdfBtn).addEventListener('click', handlers.handleGeneratePdf);
+  
+  get(SELECTORS.closeHistoryModalBtn).addEventListener('click', () => closeModal(get(SELECTORS.historyModal)));
 
-  // Modal de Histórico
-  ui.closeHistoryModalBtn.addEventListener('click', () => closeModal(ui.historyModal));
-
-  // Lógica para fechar modais ao clicar fora (no fundo escuro)
-  [ui.registerModal, ui.reserveModal, ui.reservedModal, ui.historyModal].forEach(modal => {
-    modal.addEventListener('click', (e) => { 
-        // O e.target precisa ser exatamente o elemento de fundo para fechar
-        if (e.target === modal) {
-            closeModal(modal);
-        }
-    });
+  [SELECTORS.registerModal, SELECTORS.reserveModal, SELECTORS.reservedModal, SELECTORS.historyModal].forEach(selector => {
+    const modal = get(selector);
+    if (modal) {
+        modal.addEventListener('click', (e) => { 
+            if (e.target === modal) closeModal(modal);
+        });
+    }
   });
 
-  // Atualização automática
   setInterval(handlers.handleLoadFilterOptions, AUTO_REFRESH_INTERVAL);
   window.addEventListener('focus', handlers.handleLoadFilterOptions);
 
-  // Carga de dados inicial da aplicação
   handlers.handleLoadFilterOptions();
   handlers.handleLoadRetalhos();
   isAppInitialized = true;
 }
 
-// Ponto de entrada da aplicação
 document.addEventListener('DOMContentLoaded', initializeAuth);

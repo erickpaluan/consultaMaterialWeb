@@ -1,34 +1,49 @@
-import { ui } from '../uiElements.js';
+import { SELECTORS } from '../selectors.js';
 import { createRetalhoTableRow, createRetalhoCard, createReservedItemsTable, createHistoryLog } from './components.js';
-import { getState } from '../state.js'; 
 
+const get = (selector) => document.querySelector(selector);
+const getAll = (selector) => document.querySelectorAll(selector);
+
+// ==========================================================
+// FUNÇÃO CORRIGIDA ABAIXO
+// ==========================================================
 export function renderRetalhos(retalhos) {
+  const tableBody = get(SELECTORS.resultsTableBody);
+  const cardsContainer = get(SELECTORS.resultsCardsContainer);
+  if (!tableBody || !cardsContainer) return;
 
-    const { currentUser } = getState();
-    const userRole = currentUser?.role;
-  ui.resultsTableBody.innerHTML = '';
-  ui.resultsCardsContainer.innerHTML = '';
+  // Limpa os resultados anteriores
+  tableBody.innerHTML = '';
+  cardsContainer.innerHTML = '';
 
-  const hasResults = retalhos.length > 0;
-  ui.emptyState.classList.toggle('hidden', hasResults);
-  ui.resultsContainer.classList.toggle('hidden', !hasResults);
+  // Verifica se a lista de retalhos tem algum item
+  const hasResults = retalhos && retalhos.length > 0;
+
+  // LÓGICA DE VISIBILIDADE SINCRONIZADA
+  // 1. Se 'hasResults' for verdadeiro, a classe 'hidden' é ADICIONADA à mensagem de "vazio" (escondendo-a).
+  //    Se for falso, a classe 'hidden' é REMOVIDA (mostrando-a).
+  get(SELECTORS.emptyState).classList.toggle('hidden', hasResults);
+
+  // 2. A lógica aqui é invertida com '!'. Se 'hasResults' for verdadeiro, a classe 'hidden' é REMOVIDA do container de resultados (mostrando-o).
+  //    Se for falso, a classe 'hidden' é ADICIONADA (escondendo-o).
+  get(SELECTORS.resultsContainer).classList.toggle('hidden', !hasResults);
   
+  // Se houver resultados, preenche o grid/tabela
   if (hasResults) {
     retalhos.forEach(retalho => {
-      ui.resultsTableBody.appendChild(createRetalhoTableRow(retalho, userRole));
-      ui.resultsCardsContainer.appendChild(createRetalhoCard(retalho, userRole));
+      tableBody.appendChild(createRetalhoTableRow(retalho));
+      cardsContainer.appendChild(createRetalhoCard(retalho));
     });
   }
 }
-
-export function renderAuditoria(logs) {
-    ui.historyModalContent.innerHTML = createHistoryLog(logs);
-}
+// ==========================================================
+// FIM DA CORREÇÃO
+// ==========================================================
 
 export function populateSelect(selectElement, items, { defaultOption, textKey, valueKey, addOptions = [] }) {
+    if (!selectElement) return;
     const currentValue = selectElement.value;
     selectElement.innerHTML = `<option value="">${defaultOption}</option>`;
-    
     items.forEach(item => {
         const option = document.createElement('option');
         const value = valueKey ? item[valueKey] : item;
@@ -37,61 +52,74 @@ export function populateSelect(selectElement, items, { defaultOption, textKey, v
         option.textContent = text;
         selectElement.appendChild(option);
     });
-    
     addOptions.forEach(opt => selectElement.innerHTML += opt);
-
     if (currentValue && Array.from(selectElement.options).some(opt => opt.value === currentValue)) {
         selectElement.value = currentValue;
     }
 }
 
 export function toggleLoader(isLoading) {
-    ui.loader.classList.toggle('hidden', !isLoading);
+    get(SELECTORS.loader).classList.toggle('hidden', !isLoading);
 }
 
 export function updatePagination(currentPage, totalItems, itemsPerPage) {
     const totalPages = Math.ceil(totalItems / itemsPerPage);
-    ui.paginationControls.classList.toggle('hidden', totalPages <= 1);
+    const paginationControls = get(SELECTORS.paginationControls);
+    if (!paginationControls) return;
+
+    paginationControls.classList.toggle('hidden', totalPages <= 1);
     
     if (totalPages > 1) {
-        ui.pageInfo.textContent = `Página ${currentPage} de ${totalPages}`;
-        ui.prevPageBtn.disabled = currentPage === 1;
-        ui.nextPageBtn.disabled = currentPage >= totalPages;
+        get(SELECTORS.pageInfo).textContent = `Página ${currentPage} de ${totalPages}`;
+        get(SELECTORS.prevPageBtn).disabled = currentPage === 1;
+        get(SELECTORS.nextPageBtn).disabled = currentPage >= totalPages;
     }
 }
 
 export function toggleClearButtonVisibility() {
-    const formElements = ui.filterForm.elements;
-    const hasFilter = formElements.material.value || formElements.tipo.value || formElements.espessura.value || formElements.largura.value || formElements.altura.value;
-    ui.clearBtn.classList.toggle('hidden', !hasFilter);
+    const form = get(SELECTORS.filterForm);
+    if (!form) return;
+    const smartSearch = get(SELECTORS.smartSearchInput);
+    const hasFilter = form.elements.material.value || form.elements.tipo.value || form.elements.espessura.value || form.elements.largura.value || form.elements.altura.value || (smartSearch && smartSearch.value);
+    get(SELECTORS.clearBtn).classList.toggle('hidden', !hasFilter);
 }
 
 export function resetFilterForm() {
-    ui.filterForm.reset();
-    ui.tipoSelect.innerHTML = '<option value="">Todos os Tipos</option>';
-    ui.espessuraSelect.innerHTML = '<option value="">Todas as Espessuras</option>';
+    get(SELECTORS.filterForm)?.reset();
+    const smartSearchInput = get(SELECTORS.smartSearchInput);
+    if(smartSearchInput) smartSearchInput.value = '';
+
+    const tipoSelect = get(SELECTORS.tipoSelect);
+    if(tipoSelect) tipoSelect.innerHTML = '<option value="">Todos os Tipos</option>';
+    
+    const espessuraSelect = get(SELECTORS.espessuraSelect);
+    if(espessuraSelect) espessuraSelect.innerHTML = '<option value="">Todas as Espessuras</option>';
+    
     toggleClearButtonVisibility();
 }
 
 export function resetRegisterForm() {
-    ui.registerForm.reset();
-    ui.regNovoMaterialContainer.classList.add('hidden');
-    ui.regNovoTipoContainer.classList.add('hidden');
-    ui.registerForm.querySelectorAll('.error-message').forEach(el => el.remove());
-    ui.registerForm.querySelectorAll('.has-error').forEach(el => el.classList.remove('has-error'));
+    const form = get(SELECTORS.registerForm);
+    if (!form) return;
+    form.reset();
+    get(SELECTORS.regNovoMaterialContainer).classList.add('hidden');
+    get(SELECTORS.regNovoTipoContainer).classList.add('hidden');
+    form.querySelectorAll('.border-red-500').forEach(el => el.classList.remove('border-red-500'));
 }
 
 export function renderReservedItems(data) {
-    ui.reservedModalContent.innerHTML = '';
-    if(data.length === 0) {
-        ui.reservedModalContent.innerHTML = `<p class="text-center text-gray-500 p-4">Nenhum retalho reservado encontrado.</p>`;
+    const container = get(SELECTORS.reservedModalContent);
+    if (!container) return;
+    container.innerHTML = '';
+    if(!data || data.length === 0) {
+        container.innerHTML = `<p class="text-center text-gray-500 p-4">Nenhum retalho reservado encontrado.</p>`;
     } else {
-        ui.reservedModalContent.appendChild(createReservedItemsTable(data));
+        container.appendChild(createReservedItemsTable(data));
     }
 }
 
 export function updateSortVisuals(column, direction) {
-    ui.resultsTable.querySelectorAll('th[data-sort]').forEach(th => {
+    getAll(`${SELECTORS.resultsTable} th[data-sort]`).forEach(th => {
         th.classList.remove('sort-asc', 'sort-desc');
         if (th.dataset.sort === column) {
             th.classList.add(direction ? 'sort-asc' : 'sort-desc');
@@ -100,7 +128,23 @@ export function updateSortVisuals(column, direction) {
 }
 
 export function toggleSubmitButton(button, isSubmitting, text) {
+    if (!button) return;
     button.disabled = isSubmitting;
-    button.querySelector('.reg-spinner').classList.toggle('hidden', !isSubmitting);
-    button.querySelector('.reg-btn-text').textContent = isSubmitting ? 'Salvando...' : text;
+    
+    const spinnerElement = button.querySelector(SELECTORS.regSpinner);
+    if (spinnerElement) {
+        spinnerElement.classList.toggle('hidden', !isSubmitting);
+    }
+    
+    const textElement = button.querySelector(SELECTORS.regSubmitBtnText);
+    if (textElement) {
+        textElement.textContent = text;
+    }
+}
+
+export function renderAuditoria(logs) {
+    const container = get(SELECTORS.historyModalContent);
+    if (container) {
+        container.innerHTML = createHistoryLog(logs);
+    }
 }

@@ -1,7 +1,60 @@
 import { supabase } from "./supabaseClient.js";
 
+export async function deleteRetalho(retalhoId) {
+    return await supabase.from("retalhos").delete().eq("id", retalhoId);
+}
+
+export async function checkForExistingRetalho(retalho) {
+    const { data, error } = await supabase
+      .from("retalhos")
+      .select("*")
+      .eq("material", retalho.material)
+      .eq("tipo", retalho.tipo)
+      .eq("espessura", retalho.espessura)
+      .eq("comprimento", retalho.comprimento)
+      .eq("largura", retalho.largura)
+      .maybeSingle();
+
+    if (error) {
+        console.error("Erro ao verificar retalho existente:", error);
+        return null;
+    }
+    
+    return data;
+}
+
+export async function fetchRetalhos(filters, pagination, sort) {
+  let query = supabase
+    .from("retalhos")
+    .select("*", { count: "exact" })
+    .gt('quantidade', 0)
+    .order(sort.column, { ascending: sort.direction });
+
+  if (filters.material) query = query.eq("material", filters.material);
+  if (filters.tipo) query = query.eq("tipo", filters.tipo);
+  if (filters.espessura) query = query.eq("espessura", filters.espessura);
+  if (filters.largura && !isNaN(parseFloat(filters.largura))) query = query.gte("largura", parseFloat(filters.largura));
+  if (filters.altura && !isNaN(parseFloat(filters.altura))) query = query.gte("comprimento", parseFloat(filters.altura));
+  
+  if (filters.textSearch && filters.textSearch.length > 0) {
+    const searchConditions = filters.textSearch.map(term => 
+        `or(material.ilike.%${term}%,tipo.ilike.%${term}%)`
+    ).join(',');
+    query = query.or(searchConditions);
+  }
+  
+  const from = (pagination.currentPage - 1) * pagination.itemsPerPage;
+  const to = from + pagination.itemsPerPage - 1;
+  query = query.range(from, to);
+
+  return await query;
+}
+
+export async function fetchFullRetalhoById(id) {
+    return await supabase.from('retalhos').select('*').eq('id', id).single();
+}
+
 export async function registrarAuditoria(logData) {
-    // Exemplo de logData: { retalho_id, user_id, user_email, acao, detalhes }
     const { error } = await supabase.from('auditoria_retalhos').insert(logData);
     if (error) {
         console.error("Falha ao registrar auditoria:", error);
@@ -16,29 +69,8 @@ export async function fetchAuditoriaPorRetalhoId(retalhoId) {
         .order('created_at', { ascending: false });
 }
 
-export async function fetchRetalhos(filters, pagination, sort) {
-  let query = supabase
-    .from("retalhos")
-    .select("*", { count: "exact" })
-    .gt('quantidade', 0) // <-- NOVO: Só busca itens com quantidade maior que zero
-    .order(sort.column, { ascending: sort.direction });
-
-  if (filters.material) query = query.eq("material", filters.material);
-  if (filters.tipo) query = query.eq("tipo", filters.tipo);
-  if (filters.espessura) query = query.eq("espessura", filters.espessura);
-  if (filters.largura && !isNaN(parseFloat(filters.largura))) query = query.gte("largura", parseFloat(filters.largura));
-  if (filters.altura && !isNaN(parseFloat(filters.altura))) query = query.gte("comprimento", parseFloat(filters.altura));
-  
-  const from = (pagination.currentPage - 1) * pagination.itemsPerPage;
-  const to = from + pagination.itemsPerPage - 1;
-  query = query.range(from, to);
-
-  return await query;
-}
-
-// NOVO: Busca todos os dados de um retalho específico para edição
-export async function fetchFullRetalhoById(id) {
-    return await supabase.from('retalhos').select('*').eq('id', id).single();
+export async function createRetalho(novoRetalho) {
+    return await supabase.from("retalhos").insert([novoRetalho]).select().single();
 }
 
 export async function fetchDistinctField(field, order = true) {
@@ -59,27 +91,6 @@ export async function fetchRetalhoById(id) {
 
 export async function fetchReservationsByRetalhoId(retalhoId) {
     return await supabase.from("reservas").select("id").eq("retalho_id", retalhoId);
-}
-
-export async function checkForExistingRetalho(retalho, excludeId = null) {
-    let query = supabase
-      .from("retalhos")
-      .select("*")
-      .eq("material", retalho.material)
-      .eq("tipo", retalho.tipo)
-      .eq("espessura", retalho.espessura)
-      .eq("comprimento", retalho.comprimento)
-      .eq("largura", retalho.largura);
-
-    if (excludeId) {
-        query = query.neq('id', excludeId);
-    }
-      
-    return await query.maybeSingle();
-}
-
-export async function createRetalho(novoRetalho) {
-    return await supabase.from("retalhos").insert([novoRetalho]).select().single();
 }
 
 export async function updateRetalho(id, updateData) {

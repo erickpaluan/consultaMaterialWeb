@@ -1,11 +1,10 @@
-import { ui } from './uiElements.js';
-
+// js/state.js
 const appState = {
   retalhos: [],
   currentPage: 1,
   totalItems: 0,
   sort: { column: "numero", direction: true },
-  filters: { material: "", tipo: "", espessura: "", largura: "", altura: "" },
+  filters: { material: "", tipo: "", espessura: "", largura: "", altura: "", textSearch: [] },
   isLoading: false,
   currentRetalhoToReserve: { id: null, quantidadeDisponivel: 0 },
   existingMaterials: [],
@@ -16,18 +15,21 @@ const appState = {
 export const getState = () => appState;
 export const setState = (newState) => { Object.assign(appState, newState); };
 
-export const updateFilters = () => {
-    const formElements = ui.filterForm.elements;
-    appState.filters.material = formElements.material.value;
-    appState.filters.tipo = formElements.tipo.value;
-    appState.filters.espessura = formElements.espessura.value;
-    appState.filters.largura = formElements.largura.value;
-    appState.filters.altura = formElements.altura.value;
+// Esta função agora precisa do 'form' como argumento, pois não tem mais acesso direto ao DOM.
+export const updateFilters = (form, searchInput) => {
+    appState.filters.material = form.elements.material.value;
+    appState.filters.tipo = form.elements.tipo.value;
+    appState.filters.espessura = form.elements.espessura.value;
+    appState.filters.largura = form.elements.largura.value;
+    appState.filters.altura = form.elements.altura.value;
+    // Garante que a busca por texto seja limpa ao usar os filtros
+    appState.filters.textSearch = []; 
     appState.currentPage = 1;
 };
 
 export const resetFilters = () => {
-    appState.filters = { material: "", tipo: "", espessura: "", largura: "", altura: "" };
+    // Reseta todos os filtros, incluindo a busca por texto
+    appState.filters = { material: "", tipo: "", espessura: "", largura: "", altura: "", textSearch: [] };
     appState.currentPage = 1;
 };
 
