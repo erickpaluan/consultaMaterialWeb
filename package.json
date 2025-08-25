@@ -1,5 +1,6 @@
 {
   "devDependencies": {
+    "jest": "^29.6.2",
     "prettier": "^3.6.2",
     "supabase": "^2.31.8"
   },
@@ -17,7 +18,9 @@
   "scripts": {
     "dev": "next dev",
     "lint:check": "prettier --check .",
-    "lint:fix": "prettier --write ."
+    "lint:fix": "prettier --write .",
+    "test": "jest",
+    "test:watch": "jest --watch"
   },
   "author": "",
   "license": "MIT"
