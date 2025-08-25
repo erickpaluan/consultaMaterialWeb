@@ -1,71 +1,165 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Painel de Administração</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <style>
-        @keyframes spin { to { transform: rotate(360deg); } }
-        .animate-spin { animation: spin 1s linear infinite; }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+      .animate-spin {
+        animation: spin 1s linear infinite;
+      }
     </style>
-</head>
-<body class="bg-gray-100">
+  </head>
+  <body class="bg-gray-100">
     <div id="admin-container" class="hidden">
-        <header class="bg-white shadow-sm">
-            <div class="container mx-auto px-4 py-3 flex justify-between items-center">
-                <div>
-                    <h1 class="text-xl font-bold text-gray-800">Painel de Administração</h1>
-                    <a href="index.html" class="text-sm text-blue-600 hover:underline">&larr; Voltar para o sistema</a>
-                </div>
-            </div>
-        </header>
+      <header class="bg-white shadow-sm">
+        <div
+          class="container mx-auto px-4 py-3 flex justify-between items-center"
+        >
+          <div>
+            <h1 class="text-xl font-bold text-gray-800">
+              Painel de Administração
+            </h1>
+            <a href="index.html" class="text-sm text-blue-600 hover:underline"
+              >&larr; Voltar para o sistema</a
+            >
+          </div>
+        </div>
+      </header>
 
-        <main class="container mx-auto p-4 mt-6">
-            <div class="max-w-5xl mx-auto space-y-8">
-                <div class="bg-white p-6 rounded-lg shadow-md">
-                    <h2 class="text-xl font-bold text-gray-800 border-b pb-4 mb-6">Gestão de Usuários</h2>
-                    
-                    <div class="mb-8">
-                        <h3 class="text-lg font-semibold mb-2">Criar Novo Usuário</h3>
-                        <form id="create-user-form" class="p-4 border rounded-md bg-gray-50 space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><label for="new-user-name" class="block text-sm font-medium text-gray-700">Nome Completo</label><input type="text" id="new-user-name" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
-                                <div><label for="new-user-email" class="block text-sm font-medium text-gray-700">Email</label><input type="email" id="new-user-email" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><label for="new-user-password" class="block text-sm font-medium text-gray-700">Senha Provisória</label><input type="password" id="new-user-password" required class="mt-1 w-full border-gray-300 rounded-md shadow-sm"></div>
-                                <div><label for="new-user-role" class="block text-sm font-medium text-gray-700">Cargo (Permissão)</label><select id="new-user-role" class="mt-1 w-full border-gray-300 rounded-md shadow-sm"><option value="user">Usuário</option><option value="admin">Administrador</option></select></div>
-                            </div>
-                            <div class="text-right"><button type="submit" id="create-user-btn" class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700">Criar Usuário</button></div>
-                        </form>
-                    </div>
+      <main class="container mx-auto p-4 mt-6">
+        <div class="max-w-5xl mx-auto space-y-8">
+          <div class="bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-xl font-bold text-gray-800 border-b pb-4 mb-6">
+              Gestão de Usuários
+            </h2>
 
-                    <div>
-                        <h3 class="text-lg font-semibold mb-4">Usuários Cadastrados</h3>
-                        <div id="user-list-loader" class="text-center py-4">Carregando usuários...</div>
-                        <div id="user-list-container" class="overflow-x-auto">
-                            <table class="min-w-full divide-y divide-gray-200 hidden">
-                                <thead class="bg-gray-50">
-                                    <tr>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nome</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cargo</th>
-                                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                        <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Ações</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="user-list-body" class="bg-white divide-y divide-gray-200">
-                                    </tbody>
-                            </table>
-                        </div>
-                    </div>
+            <div class="mb-8">
+              <h3 class="text-lg font-semibold mb-2">Criar Novo Usuário</h3>
+              <form
+                id="create-user-form"
+                class="p-4 border rounded-md bg-gray-50 space-y-4"
+              >
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      for="new-user-name"
+                      class="block text-sm font-medium text-gray-700"
+                      >Nome Completo</label
+                    ><input
+                      type="text"
+                      id="new-user-name"
+                      required
+                      class="mt-1 w-full border-gray-300 rounded-md shadow-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="new-user-email"
+                      class="block text-sm font-medium text-gray-700"
+                      >Email</label
+                    ><input
+                      type="email"
+                      id="new-user-email"
+                      required
+                      class="mt-1 w-full border-gray-300 rounded-md shadow-sm"
+                    />
+                  </div>
                 </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div>
+                    <label
+                      for="new-user-password"
+                      class="block text-sm font-medium text-gray-700"
+                      >Senha Provisória</label
+                    ><input
+                      type="password"
+                      id="new-user-password"
+                      required
+                      class="mt-1 w-full border-gray-300 rounded-md shadow-sm"
+                    />
+                  </div>
+                  <div>
+                    <label
+                      for="new-user-role"
+                      class="block text-sm font-medium text-gray-700"
+                      >Cargo (Permissão)</label
+                    ><select
+                      id="new-user-role"
+                      class="mt-1 w-full border-gray-300 rounded-md shadow-sm"
+                    >
+                      <option value="user">Usuário</option>
+                      <option value="admin">Administrador</option>
+                    </select>
+                  </div>
+                </div>
+                <div class="text-right">
+                  <button
+                    type="submit"
+                    id="create-user-btn"
+                    class="bg-blue-600 text-white font-semibold py-2 px-4 rounded-md hover:bg-blue-700"
+                  >
+                    Criar Usuário
+                  </button>
+                </div>
+              </form>
             </div>
-        </main>
+
+            <div>
+              <h3 class="text-lg font-semibold mb-4">Usuários Cadastrados</h3>
+              <div id="user-list-loader" class="text-center py-4">
+                Carregando usuários...
+              </div>
+              <div id="user-list-container" class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-200 hidden">
+                  <thead class="bg-gray-50">
+                    <tr>
+                      <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Nome
+                      </th>
+                      <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Email
+                      </th>
+                      <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Cargo
+                      </th>
+                      <th
+                        class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Status
+                      </th>
+                      <th
+                        class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider"
+                      >
+                        Ações
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody
+                    id="user-list-body"
+                    class="bg-white divide-y divide-gray-200"
+                  ></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
 
     <script type="module" src="js/admin.js"></script>
-</body>
+  </body>
 </html>

@@ -5,7 +5,10 @@
 export function openModal(modalElement) {
   // Verificação de segurança: não faz nada se o elemento não for encontrado.
   if (!modalElement) {
-    console.error("Tentativa de abrir um modal que não existe no DOM.", modalElement);
+    console.error(
+      "Tentativa de abrir um modal que não existe no DOM.",
+      modalElement,
+    );
     return;
   }
 
@@ -16,7 +19,7 @@ export function openModal(modalElement) {
   setTimeout(() => {
     // 3. Remove a opacidade para tornar o modal visível.
     modalElement.classList.remove("opacity-0");
-    
+
     // 4. Anima a caixa interna do modal.
     const modalBox = modalElement.querySelector(".modal-box");
     if (modalBox) {
@@ -32,13 +35,16 @@ export function openModal(modalElement) {
 export function closeModal(modalElement) {
   // Verificação de segurança.
   if (!modalElement) {
-    console.error("Tentativa de fechar um modal que não existe no DOM.", modalElement);
+    console.error(
+      "Tentativa de fechar um modal que não existe no DOM.",
+      modalElement,
+    );
     return;
   }
 
   // 1. Inicia a animação de saída, tornando o modal transparente.
   modalElement.classList.add("opacity-0");
-  
+
   // 2. Anima a caixa interna.
   const modalBox = modalElement.querySelector(".modal-box");
   if (modalBox) {

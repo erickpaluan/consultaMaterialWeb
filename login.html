@@ -1,27 +1,41 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="pt-BR" class="h-full bg-gray-100">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login - Gerenciamento de Retalhos</title>
-    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+    <link
+      href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css"
+      rel="stylesheet"
+    />
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
   </head>
-  <body class="h-full flex items-center justify-center bg-gray-100 font-sans p-4">
-    <div class="bg-white rounded-2xl shadow-xl w-full max-w-md md:max-w-3xl flex flex-col md:flex-row overflow-hidden">
-      
+  <body
+    class="h-full flex items-center justify-center bg-gray-100 font-sans p-4"
+  >
+    <div
+      class="bg-white rounded-2xl shadow-xl w-full max-w-md md:max-w-3xl flex flex-col md:flex-row overflow-hidden"
+    >
       <!-- Logo -->
-      <div class="flex items-center justify-center bg-white p-6 md:p-8 md:w-1/2 border-b md:border-b-0 md:border-r border-gray-200">
-  <img src="./img/logo.svg" alt="Logo" class="h-20 md:h-32 w-auto" />
-</div>
+      <div
+        class="flex items-center justify-center bg-white p-6 md:p-8 md:w-1/2 border-b md:border-b-0 md:border-r border-gray-200"
+      >
+        <img src="./img/logo.svg" alt="Logo" class="h-20 md:h-32 w-auto" />
+      </div>
 
       <!-- Formulário -->
       <div class="p-6 md:p-8 flex flex-col justify-center md:w-1/2">
-        <h2 class="text-xl md:text-2xl font-bold text-center mb-6">Entrar no sistema</h2>
+        <h2 class="text-xl md:text-2xl font-bold text-center mb-6">
+          Entrar no sistema
+        </h2>
 
         <form id="login-form" class="space-y-4 md:space-y-5">
           <div>
-            <label for="login-email" class="block text-sm md:text-base font-medium mb-1">Email</label>
+            <label
+              for="login-email"
+              class="block text-sm md:text-base font-medium mb-1"
+              >Email</label
+            >
             <input
               type="email"
               id="login-email"
@@ -31,7 +45,11 @@
             />
           </div>
           <div>
-            <label for="login-password" class="block text-sm md:text-base font-medium mb-1">Senha</label>
+            <label
+              for="login-password"
+              class="block text-sm md:text-base font-medium mb-1"
+              >Senha</label
+            >
             <input
               type="password"
               id="login-password"
@@ -46,10 +64,28 @@
             id="login-btn"
             class="w-full flex items-center justify-center px-4 py-2 md:py-2.5 text-white bg-blue-600 hover:bg-blue-700 rounded-md font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
           >
-            <span class="spinner hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white">
-              <svg class="w-full h-full" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            <span
+              class="spinner hidden animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+            >
+              <svg
+                class="w-full h-full"
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  class="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  stroke-width="4"
+                ></circle>
+                <path
+                  class="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                ></path>
               </svg>
             </span>
             <span class="btn-text text-sm md:text-base">Entrar</span>

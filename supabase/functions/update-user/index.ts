@@ -12,7 +12,7 @@ serve(async (req) => {
     if (!authHeader) {
       return new Response(
         JSON.stringify({ error: "Autorização necessária." }),
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: corsHeaders },
       );
     }
 
@@ -22,14 +22,15 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_ANON_KEY")!,
       {
         global: { headers: { Authorization: authHeader } },
-      }
+      },
     );
 
-    const { data: userData, error: userError } = await supabaseClient.auth.getUser();
+    const { data: userData, error: userError } =
+      await supabaseClient.auth.getUser();
     if (userError || !userData?.user) {
       return new Response(
         JSON.stringify({ error: "Usuário não autenticado." }),
-        { status: 401, headers: corsHeaders }
+        { status: 401, headers: corsHeaders },
       );
     }
 
@@ -43,14 +44,14 @@ serve(async (req) => {
     if (profileError || profile?.role !== "admin") {
       return new Response(
         JSON.stringify({ error: "Acesso negado: apenas admin." }),
-        { status: 403, headers: corsHeaders }
+        { status: 403, headers: corsHeaders },
       );
     }
 
     // Cria cliente admin
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL")!,
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
     );
 
     const body = await req.json();
@@ -60,7 +61,7 @@ serve(async (req) => {
     if (!userId) {
       return new Response(
         JSON.stringify({ error: "ID do usuário obrigatório." }),
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: corsHeaders },
       );
     }
 
@@ -71,7 +72,7 @@ serve(async (req) => {
     if (Object.keys(updateData).length === 0) {
       return new Response(
         JSON.stringify({ error: "Nenhum campo para atualizar." }),
-        { status: 400, headers: corsHeaders }
+        { status: 400, headers: corsHeaders },
       );
     }
 
@@ -81,25 +82,28 @@ serve(async (req) => {
       .eq("id", userId);
 
     if (updateError) {
-      console.error("Erro ao atualizar usuário:", JSON.stringify(updateError, null, 2));
+      console.error(
+        "Erro ao atualizar usuário:",
+        JSON.stringify(updateError, null, 2),
+      );
       return new Response(
         JSON.stringify({
           error: "Erro ao atualizar o usuário.",
           details: updateError.message,
         }),
-        { status: 500, headers: corsHeaders }
+        { status: 500, headers: corsHeaders },
       );
     }
 
     return new Response(
       JSON.stringify({ message: "Usuário atualizado com sucesso." }),
-      { status: 200, headers: corsHeaders }
+      { status: 200, headers: corsHeaders },
     );
   } catch (err) {
     console.error("Erro inesperado:", err);
-    return new Response(
-      JSON.stringify({ error: "Erro interno na função." }),
-      { status: 500, headers: corsHeaders }
-    );
+    return new Response(JSON.stringify({ error: "Erro interno na função." }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 });
